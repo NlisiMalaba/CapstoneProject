@@ -1,0 +1,390 @@
+{
+    "swagger": "2.0",
+    "info": {
+      "title": "Hypertension Prediction API",
+      "description": "API for predicting hypertension risk using machine learning and NLP",
+      "version": "1.0.0"
+    },
+    "basePath": "/api",
+    "schemes": ["http", "https"],
+    "consumes": ["application/json"],
+    "produces": ["application/json"],
+    "securityDefinitions": {
+      "Bearer": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "description": "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\""
+      }
+    },
+    "paths": {
+      "/auth/register": {
+        "post": {
+          "summary": "Register a new user",
+          "description": "Create a new user account",
+          "tags": ["Authentication"],
+          "parameters": [
+            {
+              "name": "body",
+              "in": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": ["username", "email", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "johndoe"
+                  },
+                  "email": {
+                    "type": "string",
+                    "example": "john@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "password123"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": ["user", "admin"],
+                    "default": "user"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "201": {
+              "description": "User registered successfully"
+            },
+            "400": {
+              "description": "Invalid input"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        }
+      },
+      "/auth/login": {
+        "post": {
+          "summary": "Login",
+          "description": "Authenticate a user and return JWT tokens",
+          "tags": ["Authentication"],
+          "parameters": [
+            {
+              "name": "body",
+              "in": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "johndoe"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "password123"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Login successful"
+            },
+            "401": {
+              "description": "Invalid credentials"
+            }
+          }
+        }
+      },
+      "/auth/refresh": {
+        "post": {
+          "summary": "Refresh token",
+          "description": "Get a new access token using refresh token",
+          "tags": ["Authentication"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "New token generated"
+            },
+            "401": {
+              "description": "Invalid or expired token"
+            }
+          }
+        }
+      },
+      "/auth/me": {
+        "get": {
+          "summary": "Get current user",
+          "description": "Get current authenticated user information",
+          "tags": ["Authentication"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "User information"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "User not found"
+            }
+          }
+        }
+      },
+      "/prediction/patient-data": {
+        "post": {
+          "summary": "Save patient data",
+          "description": "Save or update patient data for prediction",
+          "tags": ["Prediction"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "body",
+              "in": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": ["age", "gender"],
+                "properties": {
+                  "age": {
+                    "type": "integer",
+                    "example": 45
+                  },
+                  "gender": {
+                    "type": "string",
+                    "enum": ["Male", "Female", "Other"],
+                    "example": "Male"
+                  },
+                  "current_smoker": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "cigs_per_day": {
+                    "type": "integer",
+                    "example": 0
+                  },
+                  "bp_meds": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "diabetes": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "total_chol": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 195.0
+                  },
+                  "sys_bp": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 130.0
+                  },
+                  "dia_bp": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 85.0
+                  },
+                  "bmi": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 27.5
+                  },
+                  "heart_rate": {
+                    "type": "integer",
+                    "example": 75
+                  },
+                  "glucose": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 98.0
+                  },
+                  "diet_description": {
+                    "type": "string",
+                    "example": "Low sodium diet with plenty of vegetables and fruits"
+                  },
+                  "medical_history": {
+                    "type": "string",
+                    "example": "No history of hypertension but family history of heart disease"
+                  },
+                  "physical_activity_level": {
+                    "type": "string",
+                    "enum": ["Low", "Moderate", "High"],
+                    "example": "Moderate"
+                  },
+                  "kidney_disease": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "heart_disease": {
+                    "type": "boolean",
+                    "example": false
+                  },
+                  "family_history_htn": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "alcohol_consumption": {
+                    "type": "string",
+                    "enum": ["None", "Light", "Moderate", "Heavy"],
+                    "example": "Light"
+                  },
+                  "salt_intake": {
+                    "type": "string",
+                    "enum": ["Low", "Moderate", "High"],
+                    "example": "Moderate"
+                  },
+                  "stress_level": {
+                    "type": "string",
+                    "enum": ["Low", "Moderate", "High"],
+                    "example": "Moderate"
+                  },
+                  "sleep_hours": {
+                    "type": "number",
+                    "format": "float",
+                    "example": 7.5
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Patient data saved successfully"
+            },
+            "400": {
+              "description": "Invalid input"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get patient data",
+          "description": "Get patient data for the current user",
+          "tags": ["Prediction"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Patient data retrieved successfully"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "No patient data found"
+            }
+          }
+        }
+      },
+      "/prediction/predict": {
+        "post": {
+          "summary": "Predict hypertension risk",
+          "description": "Generate hypertension prediction for the current user",
+          "tags": ["Prediction"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Prediction generated successfully",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "prediction": {
+                    "type": "object",
+                    "properties": {
+                      "prediction_score": {
+                        "type": "integer",
+                        "example": 65
+                      },
+                      "prediction_date": {
+                        "type": "string",
+                        "example": "2025-03-22 14:30:45"
+                      },
+                      "risk_level": {
+                        "type": "string",
+                        "example": "High"
+                      },
+                      "key_factors": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "example": ["Elevated systolic blood pressure", "Age", "Family history of hypertension"]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "No patient data found"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        }
+      },
+      "/prediction/history": {
+        "get": {
+          "summary": "Get prediction history",
+          "description": "Get prediction history for the current user",
+          "tags": ["Prediction"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Prediction history retrieved successfully"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "No prediction history found"
+            }
+          }
+        }
+      }
+    }
+  }
