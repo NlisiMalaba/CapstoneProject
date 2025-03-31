@@ -12,3 +12,6 @@ marshmallow==3.19.0
 python-dotenv==1.0.0
 passlib==1.7.4
 Flask-Cors==3.0.10
+twilio==8.15.0
+schedule==1.2.0
+apscheduler==3.10.3

@@ -3,6 +3,8 @@ from app.main import create_app
 import argparse
 from app.ml_model.train_model import main as train_model
 import shutil
+from app.tasks.reminder_scheduler import reminder_scheduler
+import atexit
 
 def setup_project():
     """Set up the project structure and sample data."""
@@ -46,6 +48,13 @@ if __name__ == '__main__':
     
     # Create app with specified environment
     app = create_app(args.env)
+    
+    # Initialize and start the reminder scheduler
+    reminder_scheduler.init_app(app)
+    reminder_scheduler.start()
+    
+    # Register scheduler shutdown when application exits
+    atexit.register(reminder_scheduler.shutdown)
     
     # Run app
     app.run(host='0.0.0.0', port=args.port)

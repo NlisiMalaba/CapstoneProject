@@ -385,6 +385,407 @@
             }
           }
         }
+      },
+      "/api/medications": {
+        "post": {
+          "tags": [
+            "Medications"
+          ],
+          "summary": "Add a new medication",
+          "description": "Add a new medication for the user",
+          "security": [
+            {
+              "JWT": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "body",
+              "in": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "dosage",
+                  "frequency",
+                  "time_of_day",
+                  "start_date"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the medication"
+                  },
+                  "dosage": {
+                    "type": "string",
+                    "description": "Dosage information"
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "description": "Frequency of taking medication"
+                  },
+                  "time_of_day": {
+                    "type": "string",
+                    "description": "JSON string of times to take medication"
+                  },
+                  "start_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Date to start medication"
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Date to end medication (optional)"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Additional notes (optional)"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "201": {
+              "description": "Medication created successfully"
+            },
+            "400": {
+              "description": "Invalid request data"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        },
+        "get": {
+          "tags": [
+            "Medications"
+          ],
+          "summary": "Get all medications",
+          "description": "Get all medications for the authenticated user",
+          "security": [
+            {
+              "JWT": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of medications"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
+      },
+      "/api/medications/{medication_id}": {
+        "get": {
+          "tags": [
+            "Medications"
+          ],
+          "summary": "Get medication details",
+          "description": "Get details of a specific medication",
+          "security": [
+            {
+              "JWT": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "medication_id",
+              "in": "path",
+              "required": true,
+              "type": "integer"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Medication details"
+            },
+            "404": {
+              "description": "Medication not found"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "Medications"
+          ],
+          "summary": "Update medication",
+          "description": "Update a medication",
+          "security": [
+            {
+              "JWT": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "medication_id",
+              "in": "path",
+              "required": true,
+              "type": "integer"
+            },
+            {
+              "name": "body",
+              "in": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "dosage": {
+                    "type": "string"
+                  },
+                  "frequency": {
+                    "type": "string"
+                  },
+                  "time_of_day": {
+                    "type": "string"
+                  },
+                  "start_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "end_date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "notes": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Medication updated successfully"
+            },
+            "400": {
+              "description": "Invalid request data"
+            },
+            "404": {
+              "description": "Medication not found"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "Medications"
+          ],
+          "summary": "Delete medication",
+          "description": "Delete a medication",
+          "security": [
+            {
+              "JWT": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "medication_id",
+              "in": "path",
+              "required": true,
+              "type": "integer"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Medication deleted successfully"
+            },
+            "404": {
+              "description": "Medication not found"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
+      },
+      "/api/medications/{medication_id}/reminders": {
+        "post": {
+          "tags": [
+            "Reminders"
+          ],
+          "summary": "Add medication reminder",
+          "description": "Add a reminder for a medication",
+          "security": [
+            {
+              "JWT": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "medication_id",
+              "in": "path",
+              "required": true,
+              "type": "integer"
+            },
+            {
+              "name": "body",
+              "in": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": [
+                  "reminder_time",
+                  "phone_number"
+                ],
+                "properties": {
+                  "reminder_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Time to send the reminder"
+                  },
+                  "phone_number": {
+                    "type": "string",
+                    "description": "Phone number to send SMS"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "201": {
+              "description": "Reminder created successfully"
+            },
+            "400": {
+              "description": "Invalid request data"
+            },
+            "404": {
+              "description": "Medication not found"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        },
+        "get": {
+          "tags": [
+            "Reminders"
+          ],
+          "summary": "Get medication reminders",
+          "description": "Get all reminders for a medication",
+          "security": [
+            {
+              "JWT": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "medication_id",
+              "in": "path",
+              "required": true,
+              "type": "integer"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of reminders"
+            },
+            "404": {
+              "description": "Medication not found"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
+      },
+      "/api/medications/verify": {
+        "post": {
+          "tags": [
+            "Medications"
+          ],
+          "summary": "Verify medication taken",
+          "description": "Verify medication was taken using verification code",
+          "security": [
+            {
+              "JWT": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "body",
+              "in": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": [
+                  "verification_code"
+                ],
+                "properties": {
+                  "verification_code": {
+                    "type": "string",
+                    "description": "Verification code from SMS"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "description": "Optional notes about taking the medication"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Medication verified as taken"
+            },
+            "400": {
+              "description": "Invalid verification code"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
+      },
+      "/api/medications/analytics": {
+        "get": {
+          "tags": [
+            "Medications"
+          ],
+          "summary": "Get medication analytics",
+          "description": "Get medication adherence analytics",
+          "security": [
+            {
+              "JWT": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "start_date",
+              "in": "query",
+              "type": "string",
+              "format": "date",
+              "required": false
+            },
+            {
+              "name": "end_date",
+              "in": "query",
+              "type": "string",
+              "format": "date",
+              "required": false
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Medication adherence analytics"
+            },
+            "401": {
+              "description": "Unauthorized"
+            }
+          }
+        }
       }
     }
   }
