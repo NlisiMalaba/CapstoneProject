@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { format, subDays, subMonths } from 'date-fns';
 import bpService from '../../services/bpService';

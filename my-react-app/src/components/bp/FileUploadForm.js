@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { toast } from 'react-toastify';
 import bpService from '../../services/bpService';
 

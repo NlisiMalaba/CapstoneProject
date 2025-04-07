@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
@@ -11,7 +10,7 @@ import History from './pages/History';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
-function App() {
+export default function App() {
   return (
     <Router>
       <AuthProvider>
@@ -76,5 +75,3 @@ function App() {
     </Router>
   );
 }
-
-export default App;
