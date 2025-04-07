@@ -9,6 +9,7 @@ from app.database import init_db
 from app.routes.auth_routes import auth_bp
 from app.routes.prediction_routes import prediction_bp
 from app.routes.medication_routes import medication_bp
+from app.routes.bp_routes import bp_bp
 
 def create_app(config_name='default'):
     """Create and configure the Flask application."""
@@ -24,6 +25,7 @@ def create_app(config_name='default'):
     app.register_blueprint(auth_bp)
     app.register_blueprint(prediction_bp)
     app.register_blueprint(medication_bp)
+    app.register_blueprint(bp_bp)
     
     # Register Swagger UI blueprint
     swagger_ui_blueprint = get_swaggerui_blueprint(

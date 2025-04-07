@@ -15,3 +15,6 @@ Flask-Cors==3.0.10
 twilio==8.15.0
 schedule==1.2.0
 apscheduler==3.10.3
+pytesseract==0.3.10
+Pillow==9.5.0
+openpyxl==3.1.2

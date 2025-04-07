@@ -786,6 +786,349 @@
             }
           }
         }
+      },
+      "/bp/readings": {
+        "post": {
+          "summary": "Add BP reading",
+          "description": "Add a new blood pressure reading",
+          "tags": ["Blood Pressure"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "body",
+              "in": "body",
+              "required": true,
+              "schema": {
+                "type": "object",
+                "required": ["systolic", "diastolic"],
+                "properties": {
+                  "systolic": {
+                    "type": "integer",
+                    "example": 120
+                  },
+                  "diastolic": {
+                    "type": "integer",
+                    "example": 80
+                  },
+                  "pulse": {
+                    "type": "integer",
+                    "example": 75
+                  },
+                  "measurement_date": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2023-04-15T08:30:00"
+                  },
+                  "measurement_time": {
+                    "type": "string",
+                    "enum": ["Morning", "Afternoon", "Evening", "Night"],
+                    "example": "Morning"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "example": "Feeling well, taken after breakfast"
+                  }
+                }
+              }
+            }
+          ],
+          "responses": {
+            "201": {
+              "description": "BP reading saved successfully"
+            },
+            "400": {
+              "description": "Invalid input"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        },
+        "get": {
+          "summary": "Get BP readings",
+          "description": "Get blood pressure readings for the current user",
+          "tags": ["Blood Pressure"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "start_date",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "format": "date-time",
+              "description": "Filter readings from this date"
+            },
+            {
+              "name": "end_date",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "format": "date-time",
+              "description": "Filter readings until this date"
+            },
+            {
+              "name": "limit",
+              "in": "query",
+              "required": false,
+              "type": "integer",
+              "default": 100,
+              "description": "Maximum number of readings to return"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of BP readings"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        }
+      },
+      "/bp/upload/csv": {
+        "post": {
+          "summary": "Upload BP CSV",
+          "description": "Upload CSV file with blood pressure readings",
+          "tags": ["Blood Pressure"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "consumes": ["multipart/form-data"],
+          "parameters": [
+            {
+              "name": "file",
+              "in": "formData",
+              "required": true,
+              "type": "file",
+              "description": "CSV file with BP readings"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "CSV processed successfully"
+            },
+            "400": {
+              "description": "Invalid file"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        }
+      },
+      "/bp/upload/image": {
+        "post": {
+          "summary": "Upload BP image",
+          "description": "Upload image with blood pressure readings for OCR extraction",
+          "tags": ["Blood Pressure"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "consumes": ["multipart/form-data"],
+          "parameters": [
+            {
+              "name": "file",
+              "in": "formData",
+              "required": true,
+              "type": "file",
+              "description": "Image file with BP readings"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Image processed successfully"
+            },
+            "400": {
+              "description": "Invalid file"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        }
+      },
+      "/bp/analytics": {
+        "get": {
+          "summary": "Get BP analytics",
+          "description": "Get blood pressure analytics data",
+          "tags": ["Blood Pressure"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "days",
+              "in": "query",
+              "required": false,
+              "type": "integer",
+              "default": 30,
+              "description": "Number of days to analyze"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "BP analytics data"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "No readings found"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        }
+      },
+      "/bp/anomalies": {
+        "get": {
+          "summary": "Detect BP anomalies",
+          "description": "Detect anomalies in blood pressure readings using machine learning",
+          "tags": ["Blood Pressure"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Anomaly detection results"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        }
+      },
+      "/bp/report": {
+        "get": {
+          "summary": "Generate BP report",
+          "description": "Generate PDF or Excel report of blood pressure data",
+          "tags": ["Blood Pressure"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "type",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "enum": ["pdf", "excel"],
+              "default": "pdf",
+              "description": "Report type"
+            },
+            {
+              "name": "start_date",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "format": "date-time",
+              "description": "Filter readings from this date"
+            },
+            {
+              "name": "end_date",
+              "in": "query",
+              "required": false,
+              "type": "string",
+              "format": "date-time",
+              "description": "Filter readings until this date"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Report generated successfully"
+            },
+            "400": {
+              "description": "Invalid parameters"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "404": {
+              "description": "No data found"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        }
+      },
+      "/bp/report/download": {
+        "get": {
+          "summary": "Download BP report",
+          "description": "Download a generated blood pressure report",
+          "tags": ["Blood Pressure"],
+          "security": [
+            {
+              "Bearer": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "path",
+              "in": "query",
+              "required": true,
+              "type": "string",
+              "description": "Report file path"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "File download",
+              "schema": {
+                "type": "file"
+              }
+            },
+            "400": {
+              "description": "Invalid parameters"
+            },
+            "401": {
+              "description": "Unauthorized"
+            },
+            "403": {
+              "description": "Forbidden"
+            },
+            "404": {
+              "description": "File not found"
+            },
+            "500": {
+              "description": "Server error"
+            }
+          }
+        }
       }
     }
   }

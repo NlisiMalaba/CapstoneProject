@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "chart.js": "^4.4.8",
+    "date-fns": "^4.1.0",
+    "react-chartjs-2": "^5.3.0",
+    "react-toastify": "^11.0.5"
+  }
+}
