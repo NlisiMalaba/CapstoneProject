@@ -27,10 +27,13 @@ ChartJS.register(
   Filler
 );
 
-const BPCharts = ({ readings, analytics }) => {
+const BPCharts = ({ readings = [], analytics = null }) => {
   const [timeRange, setTimeRange] = useState('month'); // week, month, year, all
   
-  if (!readings || readings.length === 0) {
+  // Ensure readings is always an array
+  const safeReadings = Array.isArray(readings) ? readings : [];
+  
+  if (safeReadings.length === 0) {
     return (
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4">Blood Pressure Analytics</h2>
@@ -57,11 +60,11 @@ const BPCharts = ({ readings, analytics }) => {
         since = subDays(now, 365);
         break;
       default: // 'all'
-        return readings;
+        return safeReadings;
     }
     
-    return readings.filter(reading => 
-      new Date(reading.measurement_date) >= since
+    return safeReadings.filter(reading => 
+      reading && reading.measurement_date && new Date(reading.measurement_date) >= since
     );
   };
   

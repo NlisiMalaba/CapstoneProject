@@ -35,13 +35,16 @@ const BPTracker = () => {
     try {
       // Fetch readings (default: last 30 days, limit 100)
       const readingsData = await bpService.getReadings(null, null, 100);
-      setReadings(readingsData);
+      // Ensure readings is always an array
+      setReadings(Array.isArray(readingsData) ? readingsData : []);
 
       // Fetch analytics for the last 30 days
       const analyticsData = await bpService.getAnalytics(30);
       setAnalytics(analyticsData);
     } catch (error) {
       console.error('Error fetching data:', error);
+      // Ensure readings is an empty array in case of error
+      setReadings([]);
       toast.error('Failed to fetch your blood pressure data');
     } finally {
       setLoading(false);
