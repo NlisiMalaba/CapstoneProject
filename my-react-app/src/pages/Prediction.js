@@ -505,17 +505,17 @@ const Prediction = () => {
             
             <div className="mb-6">
               <div className="text-center mb-2">
-                <span className="text-4xl font-bold">{predictionResult.score}%</span>
+                <span className="text-4xl font-bold">{predictionResult.prediction.prediction_score}%</span>
                 <p className="text-sm text-gray-500">Hypertension Risk</p>
               </div>
               
               <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
                 <div 
                   className={`h-4 rounded-full ${
-                    predictionResult.score < 30 ? 'bg-green-500' : 
-                    predictionResult.score < 60 ? 'bg-yellow-500' : 'bg-red-500'
+                    predictionResult.prediction.prediction_score < 30 ? 'bg-green-500' : 
+                    predictionResult.prediction.prediction_score < 60 ? 'bg-yellow-500' : 'bg-red-500'
                   }`} 
-                  style={{ width: `${predictionResult.score}%` }}
+                  style={{ width: `${predictionResult.prediction.prediction_score}%` }}
                 ></div>
               </div>
               
@@ -530,9 +530,14 @@ const Prediction = () => {
             
             <div className="space-y-4">
               <div>
-                <h3 className="text-lg font-medium text-gray-900">Risk Factors</h3>
+                <h3 className="text-lg font-medium text-gray-900">Risk Level: {predictionResult.prediction.risk_level}</h3>
+                <p className="text-sm text-gray-500 mt-1">Prediction Date: {new Date(predictionResult.prediction.prediction_date).toLocaleString()}</p>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Key Risk Factors</h3>
                 <ul className="mt-2 list-disc list-inside text-gray-700">
-                  {predictionResult.riskFactors?.map((factor, index) => (
+                  {predictionResult.prediction.key_factors?.map((factor, index) => (
                     <li key={index}>{factor}</li>
                   ))}
                 </ul>
@@ -541,13 +546,13 @@ const Prediction = () => {
               <div>
                 <h3 className="text-lg font-medium text-gray-900">Recommendations</h3>
                 <ul className="mt-2 list-disc list-inside text-gray-700">
-                  {predictionResult.recommendations?.map((rec, index) => (
+                  {predictionResult.prediction.recommendations?.map((rec, index) => (
                     <li key={index}>{rec}</li>
                   ))}
                 </ul>
               </div>
               
-              {predictionResult.score > 50 && (
+              {predictionResult.prediction.prediction_score > 50 && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-md">
                   <div className="flex">
                     <div className="flex-shrink-0">
