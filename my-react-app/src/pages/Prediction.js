@@ -44,7 +44,7 @@ const Prediction = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    
+
     try {
       // First save the patient data - remove predictionDate field
       const saveResponse = await fetch('http://localhost:5000/api/prediction/patient-data', {
@@ -55,12 +55,12 @@ const Prediction = () => {
         },
         body: JSON.stringify(formData) // Send only the form data without additional fields
       });
-      
+
       if (!saveResponse.ok) {
         const errorData = await saveResponse.json();
         throw new Error(errorData.message || 'Failed to save patient data');
       }
-      
+
       // Then call the prediction API endpoint
       const response = await fetch('http://localhost:5000/api/prediction/predict', {
         method: 'POST',
@@ -70,18 +70,18 @@ const Prediction = () => {
         },
         body: JSON.stringify(formData)
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to get prediction');
       }
-      
+
       const result = await response.json();
       setPredictionResult(result);
-      
+
       // The update-prediction endpoint is no longer needed as the backend handles this
       // Remove the third fetch call
-      
+
     } catch (err) {
       setError(err.message);
       console.error('Prediction error:', err);
@@ -270,7 +270,7 @@ const Prediction = () => {
 
             <div className="space-y-4">
               <div className="text-sm font-medium text-gray-700 mb-2">Medical Information</div>
-              
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -284,7 +284,7 @@ const Prediction = () => {
                   Current Smoker
                 </label>
               </div>
-              
+
               {formData.current_smoker && (
                 <div>
                   <label htmlFor="cigs_per_day" className="block text-sm font-medium text-gray-700">
@@ -300,7 +300,7 @@ const Prediction = () => {
                   />
                 </div>
               )}
-              
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -314,7 +314,7 @@ const Prediction = () => {
                   Taking Blood Pressure Medication
                 </label>
               </div>
-              
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -328,7 +328,7 @@ const Prediction = () => {
                   Diabetes
                 </label>
               </div>
-              
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -342,7 +342,7 @@ const Prediction = () => {
                   Kidney Disease
                 </label>
               </div>
-              
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -356,7 +356,7 @@ const Prediction = () => {
                   Heart Disease
                 </label>
               </div>
-              
+
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -502,23 +502,22 @@ const Prediction = () => {
             className="bg-white shadow rounded-lg p-6"
           >
             <h2 className="text-xl font-semibold text-gray-900 mb-4">Prediction Result</h2>
-            
+
             <div className="mb-6">
               <div className="text-center mb-2">
                 <span className="text-4xl font-bold">{predictionResult.prediction.prediction_score}%</span>
                 <p className="text-sm text-gray-500">Hypertension Risk</p>
               </div>
-              
+
               <div className="w-full bg-gray-200 rounded-full h-4 mb-4">
-                <div 
-                  className={`h-4 rounded-full ${
-                    predictionResult.prediction.prediction_score < 30 ? 'bg-green-500' : 
-                    predictionResult.prediction.prediction_score < 60 ? 'bg-yellow-500' : 'bg-red-500'
-                  }`} 
+                <div
+                  className={`h-4 rounded-full ${predictionResult.prediction.prediction_score < 30 ? 'bg-green-500' :
+                      predictionResult.prediction.prediction_score < 60 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
                   style={{ width: `${predictionResult.prediction.prediction_score}%` }}
                 ></div>
               </div>
-              
+
               <div className="text-sm text-gray-700">
                 <div className="flex justify-between">
                   <span>Low Risk</span>
@@ -527,13 +526,25 @@ const Prediction = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium text-gray-900">Risk Level: {predictionResult.prediction.risk_level}</h3>
-                <p className="text-sm text-gray-500 mt-1">Prediction Date: {new Date(predictionResult.prediction.prediction_date).toLocaleString()}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Prediction Date: {new Date(predictionResult.prediction.prediction_date).toLocaleDateString('en-GB', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                  , {new Date(predictionResult.prediction.prediction_date).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })}
+                </p>
               </div>
-              
+
               <div>
                 <h3 className="text-lg font-medium text-gray-900">Key Risk Factors</h3>
                 <ul className="mt-2 list-disc list-inside text-gray-700">
@@ -542,7 +553,7 @@ const Prediction = () => {
                   ))}
                 </ul>
               </div>
-              
+
               <div>
                 <h3 className="text-lg font-medium text-gray-900">Recommendations</h3>
                 <ul className="mt-2 list-disc list-inside text-gray-700">
@@ -551,7 +562,7 @@ const Prediction = () => {
                   ))}
                 </ul>
               </div>
-              
+
               {predictionResult.prediction.prediction_score > 50 && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-md">
                   <div className="flex">
@@ -571,7 +582,7 @@ const Prediction = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className="flex justify-end mt-6">
                 <button
                   onClick={() => setPredictionResult(null)}
