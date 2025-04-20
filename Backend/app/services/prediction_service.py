@@ -6,40 +6,31 @@ from datetime import datetime
 from app.models.patient_data import PatientData
 from app.database import db
 from app.utils.text_processor import extract_features_from_text
+from app.models.prediction_history import PredictionHistory
+from app.services.ml_service import hypertension_prediction_service
+from app.services.user_profile_service import user_profile_service
 
 class PredictionService:
     def __init__(self):
         # Load the model and vectorizer
-        model_path = os.path.join(os.path.dirname(__file__), '..', 'ml_model', 'model.pkl')
-        vectorizer_path = os.path.join(os.path.dirname(__file__), '..', 'ml_model', 'vectorizer.pkl')
-        
-        try:
-            with open(model_path, 'rb') as f:
-                self.model = pickle.load(f)
-            
-            with open(vectorizer_path, 'rb') as f:
-                self.vectorizer = pickle.load(f)
-        except FileNotFoundError:
-            # If model doesn't exist yet, set to None - will be created on first use
-            self.model = None
-            self.vectorizer = None
+        self.model = hypertension_prediction_service.model
+        self.vectorizer = hypertension_prediction_service.vectorizer
     
     def save_patient_data(self, user_id, data):
-        """Save patient data to database."""
+        """Save or update patient data for a user."""
         try:
-            # Check if patient data already exists for this user
-            existing_data = PatientData.query.filter_by(user_id=user_id).first()
+            # Check if patient data exists
+            patient_data = PatientData.query.filter_by(user_id=user_id).first()
             
-            if existing_data:
-                # Update existing record
+            if patient_data:
+                # Update existing data
                 for key, value in data.items():
-                    if hasattr(existing_data, key):
-                        setattr(existing_data, key, value)
-                existing_data.updated_at = datetime.utcnow()
-                patient_data = existing_data
+                    setattr(patient_data, key, value)
+                patient_data.updated_at = datetime.utcnow()
             else:
-                # Create new record
-                patient_data = PatientData(user_id=user_id, **data)
+                # Create new patient data
+                data['user_id'] = user_id
+                patient_data = PatientData(**data)
                 db.session.add(patient_data)
             
             db.session.commit()
@@ -54,6 +45,30 @@ class PredictionService:
             # Make sure model is loaded
             if self.model is None:
                 return {'error': 'Model not trained yet'}, 500
+            
+            # Get user profile data to use instead of asking user repeatedly
+            user_profile = user_profile_service.get_profile(patient_data.user_id)
+            
+            # If user profile exists, update patient data with profile values
+            profile_updated = False
+            if user_profile:
+                profile_updated = self._update_patient_data_from_profile(patient_data, user_profile)
+            
+            # Check if required profile-based data is available
+            missing_data = []
+            if patient_data.age is None or patient_data.age == 0:
+                missing_data.append("age")
+            if not patient_data.gender:
+                missing_data.append("gender")
+            if patient_data.bmi is None or patient_data.bmi == 0:
+                missing_data.append("BMI (or height and weight)")
+            
+            # If critical data is missing, return error
+            if missing_data:
+                return {
+                    'error': f"Missing required data: {', '.join(missing_data)}. Please complete your user profile.",
+                    'missing_fields': missing_data
+                }, 400
             
             # Extract structured features
             structured_features = self._extract_structured_features(patient_data)
@@ -126,12 +141,43 @@ class PredictionService:
                 'prediction_date': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
                 'risk_level': risk_level,
                 'key_factors': key_factors,
-                'recommendations': recommendations
+                'recommendations': recommendations,
+                'used_profile_data': profile_updated
             }, 200
         except Exception as e:
             db.session.rollback()
             print(f"Prediction error: {str(e)}")
             return {'error': str(e)}, 500
+    
+    def _update_patient_data_from_profile(self, patient_data, user_profile):
+        """Update patient data with values from user profile."""
+        updated = False
+        
+        # Always override with profile data for these fields
+        if user_profile.age:
+            patient_data.age = user_profile.age
+            updated = True
+        
+        if user_profile.gender:
+            patient_data.gender = user_profile.gender
+            updated = True
+        
+        # Calculate BMI from profile if available
+        if user_profile.bmi:
+            patient_data.bmi = user_profile.bmi
+            updated = True
+        elif user_profile.weight and user_profile.height:
+            # Recalculate BMI just to be sure
+            height_in_meters = user_profile.height / 100
+            patient_data.bmi = round(user_profile.weight / (height_in_meters * height_in_meters), 2)
+            updated = True
+        
+        # Commit changes to the database if updates were made
+        if updated:
+            db.session.commit()
+            print(f"Updated patient data from user profile: Age={patient_data.age}, Gender={patient_data.gender}, BMI={patient_data.bmi}")
+        
+        return updated
     
     def _extract_structured_features(self, patient_data):
         """Extract numerical and categorical features."""

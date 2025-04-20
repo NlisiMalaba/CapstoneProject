@@ -2,6 +2,7 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.prediction_service import PredictionService
 from app.models.patient_data import PatientData
+from app.services.user_profile_service import user_profile_service
 
 prediction_service = PredictionService()
 
@@ -49,6 +50,13 @@ class PredictionController:
                 'message': 'No patient data found for this user'
             }), 404
         
+        # Check if we have user profile data that can supplement the patient data
+        profile_data = user_profile_service.get_profile(user_id)
+        profile_message = ""
+        
+        if profile_data:
+            profile_message = "Your profile data will be used to supplement missing patient data for predictions."
+        
         # Convert to dictionary (excluding some fields)
         data = {c.name: getattr(patient_data, c.name) for c in patient_data.__table__.columns 
                 if c.name not in ['id', 'user_id', 'created_at', 'updated_at']}
@@ -59,7 +67,9 @@ class PredictionController:
         
         return jsonify({
             'success': True,
-            'patient_data': data
+            'patient_data': data,
+            'profile_data_available': profile_data is not None,
+            'profile_message': profile_message
         }), 200
     
     @staticmethod
@@ -77,11 +87,23 @@ class PredictionController:
                 'message': 'No patient data found. Please add patient data first.'
             }), 404
         
+        # Check if we have user profile data that can supplement the patient data
+        profile_data = user_profile_service.get_profile(user_id)
+        using_profile_data = False
+        
+        if profile_data:
+            using_profile_data = True
+        
         # Run prediction
         result, status_code = prediction_service.predict_hypertension(patient_data)
         
         if 'error' in result:
             return jsonify({'success': False, 'message': result['error']}), status_code
+        
+        # Add a message about profile data usage if relevant
+        if using_profile_data:
+            result['using_profile_data'] = True
+            result['profile_message'] = "Your prediction includes data from your user profile."
         
         return jsonify({
             'success': True,

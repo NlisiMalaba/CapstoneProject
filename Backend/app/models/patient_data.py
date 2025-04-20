@@ -8,9 +8,9 @@ class PatientData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
-    # Basic demographic info
-    age = db.Column(db.Integer, nullable=False)
-    gender = db.Column(db.String(10), nullable=False)  # Male, Female, Other
+    # Basic demographic info - now nullable since they can be pulled from user profile
+    age = db.Column(db.Integer, nullable=True)
+    gender = db.Column(db.String(10), nullable=True)  # Male, Female, Other
     
     # Framingham dataset variables
     current_smoker = db.Column(db.Boolean, default=False)
@@ -20,7 +20,7 @@ class PatientData(db.Model):
     total_chol = db.Column(db.Float, nullable=True)
     sys_bp = db.Column(db.Float, nullable=True)
     dia_bp = db.Column(db.Float, nullable=True)
-    bmi = db.Column(db.Float, nullable=True)
+    bmi = db.Column(db.Float, nullable=True)  # Can be calculated from user profile height/weight
     heart_rate = db.Column(db.Integer, nullable=True)
     glucose = db.Column(db.Float, nullable=True)
     

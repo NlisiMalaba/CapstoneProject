@@ -8,6 +8,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.feature_extraction.text import TfidfVectorizer
 import joblib
 from typing import Dict, List, Tuple, Any, Optional
 
@@ -20,6 +21,7 @@ class HypertensionPredictionService:
         self.scaler = None
         self.preprocessor = None
         self.feature_names = None
+        self.vectorizer = None
         print(self.feature_names)
         
     def load_model(self):
@@ -29,6 +31,7 @@ class HypertensionPredictionService:
             self.model = model_data.get('model')
             self.preprocessor = model_data.get('preprocessor')
             self.feature_names = model_data.get('feature_names')
+            self.vectorizer = model_data.get('vectorizer', TfidfVectorizer())
             return True
         return False
     
@@ -53,6 +56,9 @@ class HypertensionPredictionService:
         
         # Store feature names
         self.feature_names = X.columns.tolist()
+        
+        # Initialize text vectorizer
+        self.vectorizer = TfidfVectorizer(max_features=7)
         
         # Split data into training and test sets
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
@@ -98,7 +104,8 @@ class HypertensionPredictionService:
         joblib.dump({
             'model': self.model,
             'preprocessor': self.preprocessor,
-            'feature_names': self.feature_names
+            'feature_names': self.feature_names,
+            'vectorizer': self.vectorizer
         }, self.model_path)
         
         # Return model metrics

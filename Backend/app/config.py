@@ -13,6 +13,8 @@ class Config:
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
     SWAGGER_URL = '/api/docs'
     API_URL = '/static/swagger.json'
+    MODEL_PATH = os.getenv('MODEL_PATH', 'app/models/hypertension_model.joblib')
+    DATASET_PATH = os.getenv('DATASET_PATH', 'app/data/hypertension_dataset.csv')
     
 class DevelopmentConfig(Config):
     """Development configuration."""
@@ -36,3 +38,6 @@ config = {
     'production': ProductionConfig,
     'default': DevelopmentConfig
 }
+
+# Current configuration (default to development)
+current_config = config['default']
