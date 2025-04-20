@@ -47,33 +47,13 @@ const Prediction = () => {
   const [error, setError] = useState(null);
   const [showProfileAlert, setShowProfileAlert] = useState(false);
 
-  // Load profile and patient data on component mount
+  // Load patient data on component mount - no profile validation needed
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Fetch user profile
-        const profile = await profileService.getProfile();
-        setProfileData(profile);
-        
-        // Check if profile has required fields
-        if (!profile || 
-            !profile.age || 
-            !profile.gender || 
-            (!profile.bmi && (!profile.height || !profile.weight))) {
-          setProfileComplete(false);
-          
-          // Determine which fields are missing
-          const missing = [];
-          if (!profile || !profile.age) missing.push('age');
-          if (!profile || !profile.gender) missing.push('gender');
-          if (!profile || (!profile.bmi && (!profile.height || !profile.weight))) {
-            missing.push('height and weight');
-          }
-          setMissingFields(missing);
-          setShowProfileAlert(true);
-        }
+        // No need to fetch profile data since backend will handle this
         
         // Fetch existing patient data if available
         const patientData = await predictionService.getPatientData();
@@ -109,13 +89,6 @@ const Prediction = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Check if profile is complete
-    if (!profileComplete) {
-      setShowProfileAlert(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    
     setSubmitting(true);
     setError(null);
     setPredictionResult(null);
@@ -124,10 +97,10 @@ const Prediction = () => {
       // Save patient data
       await predictionService.savePatientData(formData);
       
-      // Get prediction
+      // Get prediction - backend will handle profile validation
       const result = await predictionService.getPrediction();
       setPredictionResult(result);
-      
+
       // Scroll to the results
       setTimeout(() => {
         const resultElement = document.getElementById('prediction-result');
@@ -135,18 +108,17 @@ const Prediction = () => {
           resultElement.scrollIntoView({ behavior: 'smooth' });
         }
       }, 500);
-      
+
     } catch (err) {
       console.error('Prediction error:', err);
       
-      // Handle missing profile data error
-      if (err.response && err.response.data && err.response.data.missing_fields) {
-        setProfileComplete(false);
-        setMissingFields(err.response.data.missing_fields);
+      // Handle error from backend
+      if (err.missing_fields) {
+        setMissingFields(err.missing_fields);
         setShowProfileAlert(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        setError(err.response?.data?.error || err.message || 'Failed to get prediction');
+        setError(err.message || 'Failed to get prediction');
       }
     } finally {
       setSubmitting(false);
@@ -194,7 +166,7 @@ const Prediction = () => {
           <h1 className="text-2xl font-bold text-gray-900">Hypertension Risk Prediction</h1>
         </div>
 
-        {showProfileAlert && !profileComplete && (
+        {showProfileAlert && (
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -238,12 +210,9 @@ const Prediction = () => {
             <h2 className="text-xl font-semibold text-gray-800">Your Health Information</h2>
             <p className="mt-2 text-gray-600">
               Fill out the form below to get an assessment of your hypertension risk.
-              {profileData && (
-                <span className="block mt-1 text-sm font-medium">
-                  We'll automatically use your profile data: Age ({profileData.age}), 
-                  Gender ({profileData.gender}){profileData.bmi ? `, BMI (${profileData.bmi})` : ''}
-                </span>
-              )}
+              <span className="block mt-1 text-sm font-medium">
+                Your profile data (age, gender, BMI) will be automatically included.
+              </span>
             </p>
           </div>
 
@@ -259,34 +228,34 @@ const Prediction = () => {
               <div className="md:col-span-2">
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Blood Pressure</h3>
                 <div className="bg-gray-50 p-4 rounded-md grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="sys_bp" className="block text-sm font-medium text-gray-700">
-                      Systolic Blood Pressure (mmHg)
-                    </label>
-                    <input
-                      type="number"
-                      id="sys_bp"
-                      name="sys_bp"
-                      value={formData.sys_bp}
-                      onChange={handleInputChange}
+              <div>
+                <label htmlFor="sys_bp" className="block text-sm font-medium text-gray-700">
+                  Systolic Blood Pressure (mmHg)
+                </label>
+                <input
+                  type="number"
+                  id="sys_bp"
+                  name="sys_bp"
+                  value={formData.sys_bp}
+                  onChange={handleInputChange}
                       placeholder="e.g., 120"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                  </div>
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
 
-                  <div>
-                    <label htmlFor="dia_bp" className="block text-sm font-medium text-gray-700">
-                      Diastolic Blood Pressure (mmHg)
-                    </label>
-                    <input
-                      type="number"
-                      id="dia_bp"
-                      name="dia_bp"
-                      value={formData.dia_bp}
-                      onChange={handleInputChange}
+              <div>
+                <label htmlFor="dia_bp" className="block text-sm font-medium text-gray-700">
+                  Diastolic Blood Pressure (mmHg)
+                </label>
+                <input
+                  type="number"
+                  id="dia_bp"
+                  name="dia_bp"
+                  value={formData.dia_bp}
+                  onChange={handleInputChange}
                       placeholder="e.g., 80"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
                   </div>
                 </div>
               </div>
@@ -295,31 +264,31 @@ const Prediction = () => {
               <div className="md:col-span-2">
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Health Metrics</h3>
                 <div className="bg-gray-50 p-4 rounded-md grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="total_chol" className="block text-sm font-medium text-gray-700">
-                      Total Cholesterol (mg/dL)
-                    </label>
-                    <input
-                      type="number"
-                      id="total_chol"
-                      name="total_chol"
-                      value={formData.total_chol}
-                      onChange={handleInputChange}
+              <div>
+                <label htmlFor="total_chol" className="block text-sm font-medium text-gray-700">
+                  Total Cholesterol (mg/dL)
+                </label>
+                <input
+                  type="number"
+                  id="total_chol"
+                  name="total_chol"
+                  value={formData.total_chol}
+                  onChange={handleInputChange}
                       placeholder="e.g., 200"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                  </div>
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
 
-                  <div>
-                    <label htmlFor="heart_rate" className="block text-sm font-medium text-gray-700">
-                      Heart Rate (bpm)
-                    </label>
-                    <input
-                      type="number"
-                      id="heart_rate"
-                      name="heart_rate"
-                      value={formData.heart_rate}
-                      onChange={handleInputChange}
+              <div>
+                <label htmlFor="heart_rate" className="block text-sm font-medium text-gray-700">
+                  Heart Rate (bpm)
+                </label>
+                <input
+                  type="number"
+                  id="heart_rate"
+                  name="heart_rate"
+                  value={formData.heart_rate}
+                  onChange={handleInputChange}
                       placeholder="e.g., 72"
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     />
@@ -336,210 +305,210 @@ const Prediction = () => {
                       value={formData.glucose}
                       onChange={handleInputChange}
                       placeholder="e.g., 100"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                  </div>
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
 
-                  <div>
-                    <label htmlFor="sleep_hours" className="block text-sm font-medium text-gray-700">
+              <div>
+                <label htmlFor="sleep_hours" className="block text-sm font-medium text-gray-700">
                       Average Sleep Hours
-                    </label>
-                    <input
-                      type="number"
-                      id="sleep_hours"
-                      name="sleep_hours"
-                      value={formData.sleep_hours}
-                      onChange={handleInputChange}
+                </label>
+                <input
+                  type="number"
+                  id="sleep_hours"
+                  name="sleep_hours"
+                  value={formData.sleep_hours}
+                  onChange={handleInputChange}
                       step="0.5"
                       placeholder="e.g., 7.5"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
                   </div>
-                </div>
               </div>
+            </div>
 
               {/* Medical Conditions Section */}
               <div className="md:col-span-2">
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Medical Conditions</h3>
                 <div className="bg-gray-50 p-4 rounded-md grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="current_smoker"
-                      name="current_smoker"
-                      checked={formData.current_smoker}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="current_smoker" className="ml-2 block text-sm text-gray-700">
-                      Current Smoker
-                    </label>
-                  </div>
-
-                  {formData.current_smoker && (
-                    <div>
-                      <label htmlFor="cigs_per_day" className="block text-sm font-medium text-gray-700">
-                        Cigarettes Per Day
-                      </label>
-                      <input
-                        type="number"
-                        id="cigs_per_day"
-                        name="cigs_per_day"
-                        value={formData.cigs_per_day}
-                        onChange={handleInputChange}
-                        placeholder="e.g., 10"
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="bp_meds"
-                      name="bp_meds"
-                      checked={formData.bp_meds}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="bp_meds" className="ml-2 block text-sm text-gray-700">
-                      Taking Blood Pressure Medication
-                    </label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="diabetes"
-                      name="diabetes"
-                      checked={formData.diabetes}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="diabetes" className="ml-2 block text-sm text-gray-700">
-                      Diabetes
-                    </label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="kidney_disease"
-                      name="kidney_disease"
-                      checked={formData.kidney_disease}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="kidney_disease" className="ml-2 block text-sm text-gray-700">
-                      Kidney Disease
-                    </label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="heart_disease"
-                      name="heart_disease"
-                      checked={formData.heart_disease}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="heart_disease" className="ml-2 block text-sm text-gray-700">
-                      Heart Disease
-                    </label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      id="family_history_htn"
-                      name="family_history_htn"
-                      checked={formData.family_history_htn}
-                      onChange={handleInputChange}
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label htmlFor="family_history_htn" className="ml-2 block text-sm text-gray-700">
-                      Family History of Hypertension
-                    </label>
-                  </div>
-                </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="current_smoker"
+                  name="current_smoker"
+                  checked={formData.current_smoker}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="current_smoker" className="ml-2 block text-sm text-gray-700">
+                  Current Smoker
+                </label>
               </div>
+
+              {formData.current_smoker && (
+                <div>
+                  <label htmlFor="cigs_per_day" className="block text-sm font-medium text-gray-700">
+                    Cigarettes Per Day
+                  </label>
+                  <input
+                    type="number"
+                    id="cigs_per_day"
+                    name="cigs_per_day"
+                    value={formData.cigs_per_day}
+                    onChange={handleInputChange}
+                        placeholder="e.g., 10"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="bp_meds"
+                  name="bp_meds"
+                  checked={formData.bp_meds}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="bp_meds" className="ml-2 block text-sm text-gray-700">
+                  Taking Blood Pressure Medication
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="diabetes"
+                  name="diabetes"
+                  checked={formData.diabetes}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="diabetes" className="ml-2 block text-sm text-gray-700">
+                  Diabetes
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="kidney_disease"
+                  name="kidney_disease"
+                  checked={formData.kidney_disease}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="kidney_disease" className="ml-2 block text-sm text-gray-700">
+                  Kidney Disease
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="heart_disease"
+                  name="heart_disease"
+                  checked={formData.heart_disease}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="heart_disease" className="ml-2 block text-sm text-gray-700">
+                  Heart Disease
+                </label>
+              </div>
+
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="family_history_htn"
+                  name="family_history_htn"
+                  checked={formData.family_history_htn}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label htmlFor="family_history_htn" className="ml-2 block text-sm text-gray-700">
+                  Family History of Hypertension
+                </label>
+              </div>
+            </div>
+            </div>
 
               {/* Lifestyle Section */}
               <div className="md:col-span-2">
                 <h3 className="text-lg font-medium text-gray-900 mb-3">Lifestyle Factors</h3>
                 <div className="bg-gray-50 p-4 rounded-md grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="physical_activity_level" className="block text-sm font-medium text-gray-700">
-                      Physical Activity Level
-                    </label>
-                    <select
-                      id="physical_activity_level"
-                      name="physical_activity_level"
-                      value={formData.physical_activity_level}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    >
+            <div>
+              <label htmlFor="physical_activity_level" className="block text-sm font-medium text-gray-700">
+                Physical Activity Level
+              </label>
+              <select
+                id="physical_activity_level"
+                name="physical_activity_level"
+                value={formData.physical_activity_level}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              >
                       <option value="">Select one</option>
                       <option value="Low">Low (Rarely exercise)</option>
                       <option value="Moderate">Moderate (1-3 days/week)</option>
                       <option value="High">High (4+ days/week)</option>
-                    </select>
-                  </div>
+              </select>
+            </div>
 
-                  <div>
-                    <label htmlFor="alcohol_consumption" className="block text-sm font-medium text-gray-700">
-                      Alcohol Consumption
-                    </label>
-                    <select
-                      id="alcohol_consumption"
-                      name="alcohol_consumption"
-                      value={formData.alcohol_consumption}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    >
+            <div>
+              <label htmlFor="alcohol_consumption" className="block text-sm font-medium text-gray-700">
+                Alcohol Consumption
+              </label>
+              <select
+                id="alcohol_consumption"
+                name="alcohol_consumption"
+                value={formData.alcohol_consumption}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              >
                       <option value="">Select one</option>
                       <option value="None">None</option>
                       <option value="Light">Light (1-2 drinks/week)</option>
                       <option value="Moderate">Moderate (3-7 drinks/week)</option>
                       <option value="Heavy">Heavy (8+ drinks/week)</option>
-                    </select>
-                  </div>
+              </select>
+            </div>
 
-                  <div>
-                    <label htmlFor="salt_intake" className="block text-sm font-medium text-gray-700">
-                      Salt Intake
-                    </label>
-                    <select
-                      id="salt_intake"
-                      name="salt_intake"
-                      value={formData.salt_intake}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    >
+            <div>
+              <label htmlFor="salt_intake" className="block text-sm font-medium text-gray-700">
+                Salt Intake
+              </label>
+              <select
+                id="salt_intake"
+                name="salt_intake"
+                value={formData.salt_intake}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              >
                       <option value="">Select one</option>
                       <option value="Low">Low (Rarely add salt)</option>
                       <option value="Moderate">Moderate (Occasionally add salt)</option>
                       <option value="High">High (Frequently add salt)</option>
-                    </select>
-                  </div>
+              </select>
+            </div>
 
-                  <div>
-                    <label htmlFor="stress_level" className="block text-sm font-medium text-gray-700">
-                      Stress Level
-                    </label>
-                    <select
-                      id="stress_level"
-                      name="stress_level"
-                      value={formData.stress_level}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    >
+            <div>
+              <label htmlFor="stress_level" className="block text-sm font-medium text-gray-700">
+                Stress Level
+              </label>
+              <select
+                id="stress_level"
+                name="stress_level"
+                value={formData.stress_level}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+              >
                       <option value="">Select one</option>
                       <option value="Low">Low (Rarely feel stressed)</option>
                       <option value="Moderate">Moderate (Occasionally stressed)</option>
                       <option value="High">High (Frequently stressed)</option>
-                    </select>
+              </select>
                   </div>
                 </div>
               </div>
@@ -616,7 +585,7 @@ const Prediction = () => {
               <p className="mt-1 text-gray-600">
                 Based on the information provided and your profile data
               </p>
-            </div>
+              </div>
 
             <div className="p-6">
               <div className="flex flex-col md:flex-row md:items-center md:space-x-8 mb-6">
@@ -625,7 +594,7 @@ const Prediction = () => {
                   <div className="text-4xl font-bold text-indigo-700">
                     {predictionResult.prediction_score}
                     <span className="text-xl text-gray-500 ml-1">/ 100</span>
-                  </div>
+              </div>
                 </div>
 
                 <div className="flex-1 mb-4 md:mb-0">
@@ -636,8 +605,8 @@ const Prediction = () => {
                          color: riskLevelColors[predictionResult.risk_level]
                        }}>
                     {predictionResult.risk_level}
-                  </div>
-                </div>
+              </div>
+            </div>
 
                 <div className="flex-1">
                   <div className="text-gray-700 mb-1">Prediction Date</div>
@@ -648,22 +617,22 @@ const Prediction = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
+              <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Key Risk Factors</h3>
                   <ul className="list-disc pl-5 space-y-1">
                     {predictionResult.key_factors.map((factor, index) => (
                       <li key={index} className="text-gray-700">{factor}</li>
-                    ))}
-                  </ul>
-                </div>
+                  ))}
+                </ul>
+              </div>
 
-                <div>
+              <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Recommendations</h3>
                   <ul className="list-disc pl-5 space-y-1">
                     {predictionResult.recommendations.map((recommendation, index) => (
                       <li key={index} className="text-gray-700">{recommendation}</li>
-                    ))}
-                  </ul>
+                  ))}
+                </ul>
                 </div>
               </div>
 

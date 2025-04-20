@@ -39,7 +39,7 @@ const predictionService = {
   getPatientData: async () => {
     try {
       const response = await axiosInstance.get('/patient-data');
-      return response.data;
+      return response.data.patient_data;
     } catch (error) {
       if (error.response && error.response.status === 404) {
         // Patient data not found, return null instead of throwing
@@ -53,8 +53,24 @@ const predictionService = {
   getPrediction: async () => {
     try {
       const response = await axiosInstance.post('/predict');
-      return response.data;
+      if (response.data && response.data.success) {
+        return response.data.prediction;
+      } else {
+        throw new Error(response.data.message || 'Failed to get prediction');
+      }
     } catch (error) {
+      // Extract structured error data from response if available
+      if (error.response && error.response.data) {
+        const errorData = error.response.data;
+        const customError = new Error(errorData.message || 'Failed to get prediction');
+        
+        // Attach additional error data for structured handling
+        if (errorData.missing_fields) {
+          customError.missing_fields = errorData.missing_fields;
+        }
+        
+        throw customError;
+      }
       throw error;
     }
   },
@@ -63,7 +79,7 @@ const predictionService = {
   getPredictionHistory: async () => {
     try {
       const response = await axiosInstance.get('/history');
-      return response.data;
+      return response.data.prediction_history;
     } catch (error) {
       throw error;
     }
