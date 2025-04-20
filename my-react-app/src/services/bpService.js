@@ -106,6 +106,10 @@ const bpService = {
       
       try {
         const response = await axiosInstance.get(url, { params });
+        // Check if the response has a readings property (API returns { readings: [...], success: true })
+        if (response.data && response.data.readings) {
+          return response.data.readings;
+        }
         return response.data;
       } catch (apiError) {
         console.warn('API request failed, using mock data:', apiError.message);
