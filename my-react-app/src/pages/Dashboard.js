@@ -47,6 +47,7 @@ const Dashboard = () => {
     { id: 2, name: 'Blood Pressure Tracker', icon: '📊', path: '/bp-tracker' },
     { id: 3, name: 'Medication Reminder', icon: '💊', path: '/medication' },
     { id: 4, name: 'History & Reports', icon: '📝', path: '/history' },
+    { id: 5, name: 'User Profile', icon: '👤', path: '/profile' },
   ];
 
   const cardItems = [

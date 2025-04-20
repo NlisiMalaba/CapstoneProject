@@ -7,6 +7,7 @@ import Prediction from './pages/Prediction';
 import BPTracker from './pages/BPTracker';
 import Medication from './pages/Medication';
 import History from './pages/History';
+import UserProfile from './pages/UserProfile';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -61,6 +62,15 @@ export default function App() {
             element={
               <PrivateRoute>
                 <History />
+              </PrivateRoute>
+            } 
+          />
+          
+          <Route 
+            path="/profile" 
+            element={
+              <PrivateRoute>
+                <UserProfile />
               </PrivateRoute>
             } 
           />
