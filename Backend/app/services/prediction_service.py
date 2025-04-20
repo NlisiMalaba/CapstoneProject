@@ -549,53 +549,106 @@ class PredictionService:
     def _generate_mock_prediction(self, patient_data):
         """Generate a mock prediction for testing when model is not available."""
         # Create a realistic mock risk score based on available patient data
-        base_score = 40  # Start with a moderate baseline risk
+        base_score = 35  # Start with a lower baseline risk
         
-        # Adjust based on available risk factors
+        # Adjust based on available risk factors with more weight on medical conditions
         if patient_data.age:
             if patient_data.age > 65:
-                base_score += 20
-            elif patient_data.age > 55:
                 base_score += 15
-            elif patient_data.age > 45:
+            elif patient_data.age > 55:
                 base_score += 10
+            elif patient_data.age > 45:
+                base_score += 5
             elif patient_data.age > 35:
+                base_score += 3
+        
+        # Medical conditions have higher impact
+        if patient_data.current_smoker:
+            base_score += 10
+            if patient_data.cigs_per_day and patient_data.cigs_per_day > 10:
                 base_score += 5
         
-        if patient_data.current_smoker:
+        if patient_data.diabetes:
             base_score += 15
         
-        if patient_data.diabetes:
-            base_score += 20
-        
         if patient_data.heart_disease:
-            base_score += 20
+            base_score += 18
             
         if patient_data.kidney_disease:
-            base_score += 20
+            base_score += 18
             
         if patient_data.family_history_htn:
-            base_score += 10
+            base_score += 8
         
+        # Blood pressure has significant impact
         if patient_data.sys_bp:
-            if patient_data.sys_bp >= 140:
-                base_score += 20
+            if patient_data.sys_bp >= 160:
+                base_score += 25
+            elif patient_data.sys_bp >= 140:
+                base_score += 18
             elif patient_data.sys_bp >= 130:
-                base_score += 15
+                base_score += 10
+            elif patient_data.sys_bp >= 120:
+                base_score += 5
                 
         if patient_data.dia_bp:
-            if patient_data.dia_bp >= 90:
+            if patient_data.dia_bp >= 100:
+                base_score += 20
+            elif patient_data.dia_bp >= 90:
                 base_score += 15
             elif patient_data.dia_bp >= 85:
+                base_score += 8
+            elif patient_data.dia_bp >= 80:
+                base_score += 4
+        
+        # Cholesterol factor
+        if patient_data.total_chol:
+            if patient_data.total_chol >= 240:
+                base_score += 15
+            elif patient_data.total_chol >= 200:
+                base_score += 8
+        
+        # Lifestyle factors have smaller but meaningful impact
+        if patient_data.physical_activity_level:
+            if patient_data.physical_activity_level.lower() == 'low':
+                base_score += 6
+            elif patient_data.physical_activity_level.lower() == 'moderate':
+                base_score += 2
+            # High physical activity reduces risk
+            elif patient_data.physical_activity_level.lower() == 'high':
+                base_score -= 3
+        
+        if patient_data.salt_intake and patient_data.salt_intake.lower() == 'high':
+            base_score += 5
+        
+        if patient_data.stress_level and patient_data.stress_level.lower() == 'high':
+            base_score += 5
+        
+        if patient_data.alcohol_consumption:
+            if patient_data.alcohol_consumption.lower() == 'heavy':
+                base_score += 8
+            elif patient_data.alcohol_consumption.lower() == 'moderate':
+                base_score += 4
+        
+        # BMI factor
+        if patient_data.bmi:
+            if patient_data.bmi >= 30:
                 base_score += 10
+            elif patient_data.bmi >= 25:
+                base_score += 5
+        
+        # Sleep factor
+        if patient_data.sleep_hours:
+            if patient_data.sleep_hours < 6:
+                base_score += 5
         
         # Apply a reasonable cap
-        risk_score = min(base_score, 95)
+        risk_score = min(max(base_score, 10), 95)  # Ensure score is between 10 and 95
         
         # Get risk level based on score
         risk_level = self._get_risk_level(risk_score)
         
-        # Get key factors
+        # Get key factors - more personalized based on actual inputs
         key_factors = self._identify_key_factors(patient_data)
         
         # Generate recommendations
@@ -609,15 +662,15 @@ class PredictionService:
             patient_data.risk_factors = ','.join(key_factors) if key_factors else ''
             patient_data.recommendations = ','.join(recommendations) if recommendations else ''
             db.session.commit()
-            print("Mock prediction saved to database")
+            print(f"Mock prediction saved to database with score: {risk_score}, level: {risk_level}")
         except Exception as e:
             db.session.rollback()
             print(f"Error saving mock prediction: {str(e)}")
         
-        # Return formatted prediction
+        # Return formatted prediction with full details
         return {
             'prediction_score': risk_score,
-            'prediction_date': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+            'prediction_date': datetime.utcnow().strftime('%A %d %B %Y, %I:%M %p'),
             'risk_level': risk_level,
             'key_factors': key_factors,
             'recommendations': recommendations,

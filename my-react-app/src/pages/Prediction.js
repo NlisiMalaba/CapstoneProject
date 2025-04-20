@@ -581,66 +581,90 @@ const Prediction = () => {
             className="bg-white shadow rounded-lg overflow-hidden mb-6"
           >
             <div className="p-6 border-b border-gray-200 bg-indigo-50">
-              <h2 className="text-xl font-semibold text-gray-800">Your Hypertension Risk Assessment</h2>
-              <p className="mt-1 text-gray-600">
-                Based on the information provided and your profile data
-              </p>
-              </div>
-
-            <div className="p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:space-x-8 mb-6">
-                <div className="mb-4 md:mb-0">
-                  <div className="text-gray-700 mb-1">Risk Score</div>
-                  <div className="text-4xl font-bold text-indigo-700">
-                    {predictionResult.prediction_score}
-                    <span className="text-xl text-gray-500 ml-1">/ 100</span>
-              </div>
-                </div>
-
-                <div className="flex-1 mb-4 md:mb-0">
-                  <div className="text-gray-700 mb-1">Risk Level</div>
-                  <div className="inline-block px-4 py-2 rounded-full text-lg font-semibold" 
-                       style={{ 
-                         backgroundColor: `${riskLevelColors[predictionResult.risk_level]}25`, 
-                         color: riskLevelColors[predictionResult.risk_level]
-                       }}>
-                    {predictionResult.risk_level}
-              </div>
+              <h2 className="text-xl font-semibold text-gray-800">Prediction Result</h2>
             </div>
 
-                <div className="flex-1">
-                  <div className="text-gray-700 mb-1">Prediction Date</div>
-                  <div className="text-lg">
-                    {new Date(predictionResult.prediction_date).toLocaleDateString()}
-                  </div>
+            <div className="p-6">
+              {/* Score Display */}
+              <div className="text-center mb-8">
+                <h2 className="text-5xl font-bold text-gray-800">{predictionResult.prediction_score}%</h2>
+                <p className="text-gray-600 mt-1">Hypertension Risk</p>
+                
+                {/* Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-4 mt-4">
+                  <div 
+                    className={`h-4 rounded-full ${
+                      predictionResult.prediction_score < 30 ? 'bg-green-500' : 
+                      predictionResult.prediction_score < 60 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${predictionResult.prediction_score}%` }}
+                  ></div>
                 </div>
+                
+                {/* Risk Level Labels */}
+                <div className="flex justify-between mt-1 text-sm text-gray-600">
+                  <span>Low Risk</span>
+                  <span>Moderate Risk</span>
+                  <span>High Risk</span>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900">Risk Level: {predictionResult.risk_level}</h3>
+                <p className="text-gray-600">Prediction Date: {predictionResult.prediction_date}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div>
+                <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Key Risk Factors</h3>
                   <ul className="list-disc pl-5 space-y-1">
                     {predictionResult.key_factors.map((factor, index) => (
                       <li key={index} className="text-gray-700">{factor}</li>
-                  ))}
-                </ul>
-              </div>
+                    ))}
+                  </ul>
+                </div>
 
-              <div>
+                <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-3">Recommendations</h3>
                   <ul className="list-disc pl-5 space-y-1">
                     {predictionResult.recommendations.map((recommendation, index) => (
                       <li key={index} className="text-gray-700">{recommendation}</li>
-                  ))}
-                </ul>
+                    ))}
+                  </ul>
                 </div>
               </div>
+              
+              {/* Important Notice for High Risk */}
+              {predictionResult.prediction_score > 50 && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-700">Important Notice</h3>
+                      <div className="mt-1 text-sm text-red-700">
+                        Your risk score is above 50%. It is recommended that you consult with a healthcare professional as soon as possible.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-6 text-center">
+                <button
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Make Another Prediction
+                </button>
+              </div>
 
-              <div className="border-t border-gray-200 pt-6">
+              <div className="border-t border-gray-200 pt-6 mt-6">
                 <p className="text-sm text-gray-500">
-                  This prediction is based on the information you provided and statistical models.
-                  It is intended for informational purposes only and should not replace professional medical advice.
-                  Always consult with a healthcare provider for diagnosis and treatment.
+                  This prediction is based on the information you provided and statistical models. It is intended for informational purposes only and should not replace professional medical advice. Always consult with a healthcare provider for diagnosis and treatment.
                 </p>
               </div>
             </div>
