@@ -148,7 +148,7 @@
       "/prediction/patient-data": {
         "post": {
           "summary": "Save patient data",
-          "description": "Save or update patient data for prediction. Note: age, gender, and BMI are automatically retrieved from user profile if available.",
+          "description": "Save or update patient data for prediction. Note: age, gender, and BMI are automatically retrieved from user profile if available. Blood pressure values (systolic, diastolic) and heart rate are automatically calculated from your blood pressure readings average.",
           "tags": ["Prediction"],
           "security": [
             {
@@ -183,20 +183,6 @@
                     "type": "number",
                     "format": "float",
                     "example": 195.0
-                  },
-                  "sys_bp": {
-                    "type": "number",
-                    "format": "float",
-                    "example": 130.0
-                  },
-                  "dia_bp": {
-                    "type": "number",
-                    "format": "float",
-                    "example": 85.0
-                  },
-                  "heart_rate": {
-                    "type": "integer",
-                    "example": 75
                   },
                   "glucose": {
                     "type": "number",
@@ -292,7 +278,7 @@
       "/prediction/predict": {
         "post": {
           "summary": "Predict hypertension risk",
-          "description": "Generate hypertension prediction for the current user. Patient data like age, gender, and BMI are automatically fetched from the user profile.",
+          "description": "Generate hypertension prediction for the current user. Patient data like age, gender, and BMI are automatically fetched from the user profile. Blood pressure values and heart rate are automatically calculated from your blood pressure readings average. Each prediction is stored in the history, allowing you to track changes over time.",
           "tags": ["Prediction"],
           "security": [
             {
@@ -337,6 +323,14 @@
                           "type": "string"
                         },
                         "example": ["Consider reducing sodium intake", "Regular exercise is recommended", "Monitor blood pressure regularly"]
+                      },
+                      "feature_importances": {
+                        "type": "object",
+                        "example": {
+                          "Age": 0.25,
+                          "SysBP": 0.20,
+                          "DiaBP": 0.15
+                        }
                       }
                     }
                   }
@@ -358,7 +352,7 @@
       "/prediction/history": {
         "get": {
           "summary": "Get prediction history",
-          "description": "Get prediction history for the current user",
+          "description": "Get all predictions for the current user in chronological order",
           "tags": ["Prediction"],
           "security": [
             {
@@ -367,7 +361,62 @@
           ],
           "responses": {
             "200": {
-              "description": "Prediction history retrieved successfully"
+              "description": "Prediction history retrieved successfully",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "success": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "prediction_history": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 12
+                        },
+                        "prediction_score": {
+                          "type": "integer",
+                          "example": 65
+                        },
+                        "prediction_date": {
+                          "type": "string",
+                          "example": "2025-03-22T14:30:45"
+                        },
+                        "risk_level": {
+                          "type": "string",
+                          "example": "High"
+                        },
+                        "risk_factors": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": ["Elevated systolic blood pressure", "Age", "Family history of hypertension"]
+                        },
+                        "recommendations": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": ["Consider reducing sodium intake", "Regular exercise is recommended", "Monitor blood pressure regularly"]
+                        },
+                        "feature_importances": {
+                          "type": "object",
+                          "example": {
+                            "Age": 0.25,
+                            "SysBP": 0.20,
+                            "DiaBP": 0.15
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             },
             "401": {
               "description": "Unauthorized"

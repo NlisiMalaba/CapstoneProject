@@ -2,6 +2,7 @@ from flask import request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.prediction_service import PredictionService
 from app.models.patient_data import PatientData
+from app.models.prediction_history import PredictionHistory
 from app.services.user_profile_service import user_profile_service
 from app.database import db
 
@@ -70,10 +71,6 @@ class PredictionController:
         # Convert to dictionary (excluding some fields)
         data = {c.name: getattr(patient_data, c.name) for c in patient_data.__table__.columns 
                 if c.name not in ['id', 'user_id', 'created_at', 'updated_at']}
-        
-        # Format dates
-        if data.get('prediction_date'):
-            data['prediction_date'] = data['prediction_date'].strftime('%Y-%m-%d %H:%M:%S')
         
         return jsonify({
             'success': True,
@@ -157,21 +154,28 @@ class PredictionController:
         """Get prediction history for the current user."""
         user_id = get_jwt_identity()
         
-        # Get patient data with prediction
+        # Get patient data
         patient_data = PatientData.query.filter_by(user_id=user_id).first()
         
-        if not patient_data or not patient_data.prediction_score:
+        if not patient_data:
+            return jsonify({
+                'success': False, 
+                'message': 'No patient data found for this user'
+            }), 404
+        
+        # Get all predictions from prediction_history
+        predictions = PredictionHistory.query.filter_by(patient_id=patient_data.id)\
+            .order_by(PredictionHistory.prediction_date.desc())\
+            .all()
+        
+        if not predictions:
             return jsonify({
                 'success': False, 
                 'message': 'No prediction history found for this user'
             }), 404
         
-        prediction_data = {
-            'prediction_score': patient_data.prediction_score,
-            'prediction_date': patient_data.prediction_date.strftime('%Y-%m-%d %H:%M:%S') if patient_data.prediction_date else None,
-            'risk_level': prediction_service._get_risk_level(patient_data.prediction_score),
-            'key_factors': prediction_service._identify_key_factors(patient_data)
-        }
+        # Return all predictions
+        prediction_data = [p.serialize for p in predictions]
         
         return jsonify({
             'success': True,

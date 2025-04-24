@@ -42,12 +42,11 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  const menuItems = [
+  const features = [
     { id: 1, name: 'Hypertension Risk Prediction', icon: '🩺', path: '/prediction' },
-    { id: 2, name: 'Blood Pressure Tracker', icon: '📊', path: '/bp-tracker' },
-    { id: 3, name: 'Medication Reminder', icon: '💊', path: '/medication' },
-    { id: 4, name: 'History & Reports', icon: '📝', path: '/history' },
-    { id: 5, name: 'User Profile', icon: '👤', path: '/profile' },
+    { id: 2, name: 'Prediction History & Analytics', icon: '📊', path: '/prediction-history' },
+    { id: 3, name: 'Blood Pressure Tracker', icon: '❤️', path: '/bp-tracker' },
+    { id: 4, name: 'My Profile', icon: '👤', path: '/profile' },
   ];
 
   const cardItems = [
@@ -80,7 +79,7 @@ const Dashboard = () => {
         </div>
         <nav className="mt-2">
           <ul>
-            {menuItems.map((item, index) => (
+            {features.map((item, index) => (
               <motion.li 
                 key={item.id}
                 initial={{ opacity: 0, x: -20 }}

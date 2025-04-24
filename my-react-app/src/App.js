@@ -1,87 +1,93 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import './App.css';
 import Dashboard from './pages/Dashboard';
 import Prediction from './pages/Prediction';
-import BPTracker from './pages/BPTracker';
-import Medication from './pages/Medication';
-import History from './pages/History';
+import PredictionHistory from './pages/PredictionHistory';
+import Login from './pages/Login';
+import Register from './pages/Register';
 import UserProfile from './pages/UserProfile';
-import PrivateRoute from './components/PrivateRoute';
-import './App.css';
+import BPTracker from './pages/BPTracker';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
-export default function App() {
+// Protected route wrapper component
+const PrivateRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
+function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          
-          {/* Protected routes */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } 
-          />
-          
-          <Route 
-            path="/prediction" 
-            element={
-              <PrivateRoute>
-                <Prediction />
-              </PrivateRoute>
-            } 
-          />
-          
-          <Route 
-            path="/bp-tracker" 
-            element={
-              <PrivateRoute>
-                <BPTracker />
-              </PrivateRoute>
-            } 
-          />
-          
-          <Route 
-            path="/medication" 
-            element={
-              <PrivateRoute>
-                <Medication />
-              </PrivateRoute>
-            } 
-          />
-          
-          <Route 
-            path="/history" 
-            element={
-              <PrivateRoute>
-                <History />
-              </PrivateRoute>
-            } 
-          />
-          
-          <Route 
-            path="/profile" 
-            element={
-              <PrivateRoute>
-                <UserProfile />
-              </PrivateRoute>
-            } 
-          />
-          
-          {/* Redirect to dashboard if trying to access root */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          
-          {/* Catch all route - redirect to login */}
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </AuthProvider>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            <Route 
+              path="/" 
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              } 
+            />
+            
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            
+            <Route
+              path="/prediction"
+              element={
+                <PrivateRoute>
+                  <Prediction />
+                </PrivateRoute>
+              }
+            />
+            
+            <Route
+              path="/prediction-history"
+              element={
+                <PrivateRoute>
+                  <PredictionHistory />
+                </PrivateRoute>
+              }
+            />
+            
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <UserProfile />
+                </PrivateRoute>
+              }
+            />
+            
+            <Route
+              path="/bp-tracker"
+              element={
+                <PrivateRoute>
+                  <BPTracker />
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </div>
+      </Router>
+    </AuthProvider>
   );
 }
+
+export default App;

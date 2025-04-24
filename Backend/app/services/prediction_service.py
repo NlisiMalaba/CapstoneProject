@@ -2,8 +2,9 @@ import os
 import pickle
 import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.models.patient_data import PatientData
+from app.models.blood_pressure import BloodPressure
 from app.database import db
 from app.utils.text_processor import extract_features_from_text
 from app.models.prediction_history import PredictionHistory
@@ -25,12 +26,16 @@ class PredictionService:
             if patient_data:
                 # Update existing data
                 for key, value in data.items():
-                    setattr(patient_data, key, value)
+                    # Don't update BP values as we'll get them from BP readings
+                    if key not in ['sys_bp', 'dia_bp', 'heart_rate']:
+                        setattr(patient_data, key, value)
                 patient_data.updated_at = datetime.utcnow()
             else:
-                # Create new patient data
-                data['user_id'] = user_id
-                patient_data = PatientData(**data)
+                # Create new patient data - filter out BP values
+                bp_fields = ['sys_bp', 'dia_bp', 'heart_rate']
+                filtered_data = {k: v for k, v in data.items() if k not in bp_fields}
+                filtered_data['user_id'] = user_id
+                patient_data = PatientData(**filtered_data)
                 db.session.add(patient_data)
             
             db.session.commit()
@@ -72,6 +77,16 @@ class PredictionService:
                     'missing_fields': missing_data
                 }, 400
             
+            # Get blood pressure data from blood_pressure table
+            bp_data = self._get_blood_pressure_averages(patient_data.user_id)
+            if bp_data:
+                # Update blood pressure values from BP readings
+                patient_data.sys_bp = bp_data['avg_systolic']
+                patient_data.dia_bp = bp_data['avg_diastolic']
+                patient_data.heart_rate = bp_data['avg_pulse']
+                # Save these updates
+                db.session.commit()
+            
             # Extract structured features
             structured_features = self._extract_structured_features(patient_data)
             print(f"Structured features shape: {structured_features.shape}")
@@ -107,20 +122,23 @@ class PredictionService:
             # Generate recommendations
             recommendations = self._generate_recommendations(patient_data, key_factors)
             
-            # Save all prediction results to database
+            # Extract feature importances for visualization
+            feature_importances = self._extract_feature_importances()
+            
+            # Save prediction results to prediction_history table
             try:
-                # Store basic prediction data
-                patient_data.prediction_score = adjusted_score
-                patient_data.prediction_date = datetime.utcnow()
-                patient_data.risk_level = risk_level
+                # Create new prediction history record
+                prediction_history = PredictionHistory(
+                    patient_id=patient_data.id,
+                    prediction_score=adjusted_score,
+                    prediction_date=datetime.utcnow(),
+                    risk_level=risk_level,
+                    risk_factors=','.join(key_factors) if key_factors else '',
+                    recommendations=','.join(recommendations) if recommendations else '',
+                    feature_importances=feature_importances
+                )
                 
-                # Store risk factors (as comma-separated string)
-                patient_data.risk_factors = ','.join(key_factors) if key_factors else ''
-                
-                # Store recommendations (as comma-separated string)
-                patient_data.recommendations = ','.join(recommendations) if recommendations else ''
-                
-                # Commit changes to database
+                db.session.add(prediction_history)
                 db.session.commit()
                 print("Prediction results successfully saved to database")
             except Exception as e:
@@ -144,12 +162,78 @@ class PredictionService:
                 'risk_level': risk_level,
                 'key_factors': key_factors,
                 'recommendations': recommendations,
-                'used_profile_data': profile_updated
+                'used_profile_data': profile_updated,
+                'feature_importances': feature_importances
             }, 200
         except Exception as e:
             db.session.rollback()
             print(f"Prediction error: {str(e)}")
             return {'error': str(e)}, 500
+    
+    def _get_blood_pressure_averages(self, user_id, days=30):
+        """Get average blood pressure values from recent readings."""
+        try:
+            # Get readings from the last 30 days
+            end_date = datetime.utcnow()
+            start_date = end_date - timedelta(days=days)
+            
+            readings = BloodPressure.query.filter_by(user_id=user_id)\
+                .filter(BloodPressure.measurement_date >= start_date)\
+                .all()
+            
+            if not readings:
+                print("No BP readings found for user")
+                return None
+            
+            # Calculate averages
+            systolic_values = [r.systolic for r in readings if r.systolic]
+            diastolic_values = [r.diastolic for r in readings if r.diastolic]
+            pulse_values = [r.pulse for r in readings if r.pulse]
+            
+            if not systolic_values or not diastolic_values:
+                print("No valid BP values found in readings")
+                return None
+            
+            return {
+                'avg_systolic': sum(systolic_values) / len(systolic_values),
+                'avg_diastolic': sum(diastolic_values) / len(diastolic_values),
+                'avg_pulse': sum(pulse_values) / len(pulse_values) if pulse_values else None
+            }
+        except Exception as e:
+            print(f"Error calculating BP averages: {str(e)}")
+            return None
+    
+    def _extract_feature_importances(self):
+        """Extract feature importances from the model for visualization."""
+        try:
+            if not hasattr(self.model, 'feature_importances_'):
+                return None
+                
+            # Get feature names or create placeholders
+            feature_names = [
+                "Gender(Male)", "Smoker", "CigsPerDay", "BPMeds", "Diabetes", 
+                "TotalChol", "SysBP", "DiaBP", "BMI", "HeartRate", "Glucose", "Age",
+                "KidneyDisease", "HeartDisease", "FamilyHistory", "PhysicalActivity",
+                "Alcohol", "SaltIntake", "Stress", "SleepHours"
+            ]
+            
+            # Add text feature placeholders
+            for i in range(7):
+                feature_names.append(f"TextFeature{i+1}")
+            
+            # Create a dictionary of feature importances
+            importances = self.model.feature_importances_
+            if len(importances) != len(feature_names):
+                # Truncate to match the shorter length
+                min_length = min(len(importances), len(feature_names))
+                importances = importances[:min_length]
+                feature_names = feature_names[:min_length]
+                
+            return {name: float(importance) for name, importance in zip(feature_names, importances)}
+            
+        except Exception as e:
+            print(f"Error extracting feature importances: {str(e)}")
+            return None
     
     def _update_patient_data_from_profile(self, patient_data, user_profile):
         """Update patient data with values from user profile."""

@@ -20,9 +20,6 @@ const Prediction = () => {
     bp_meds: false,
     diabetes: false,
     total_chol: '',
-    sys_bp: '',
-    dia_bp: '',
-    heart_rate: '',
     glucose: '',
     diet_description: '',
     medical_history: '',
@@ -133,6 +130,10 @@ const Prediction = () => {
     navigate('/profile');
   };
 
+  const handleViewHistory = () => {
+    navigate('/prediction-history');
+  };
+
   // Display loading spinner while data is being fetched
   if (loading) {
     return (
@@ -164,6 +165,19 @@ const Prediction = () => {
             </svg>
           </button>
           <h1 className="text-2xl font-bold text-gray-900">Hypertension Risk Prediction</h1>
+        </div>
+
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={handleViewHistory}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+              <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+            </svg>
+            View Prediction History
+          </button>
         </div>
 
         {showProfileAlert && (
@@ -224,38 +238,22 @@ const Prediction = () => {
 
           <form onSubmit={handleSubmit} className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Blood Pressure Section */}
-              <div className="md:col-span-2">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Blood Pressure</h3>
-                <div className="bg-gray-50 p-4 rounded-md grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="sys_bp" className="block text-sm font-medium text-gray-700">
-                  Systolic Blood Pressure (mmHg)
-                </label>
-                <input
-                  type="number"
-                  id="sys_bp"
-                  name="sys_bp"
-                  value={formData.sys_bp}
-                  onChange={handleInputChange}
-                      placeholder="e.g., 120"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="dia_bp" className="block text-sm font-medium text-gray-700">
-                  Diastolic Blood Pressure (mmHg)
-                </label>
-                <input
-                  type="number"
-                  id="dia_bp"
-                  name="dia_bp"
-                  value={formData.dia_bp}
-                  onChange={handleInputChange}
-                      placeholder="e.g., 80"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                />
+              {/* Info alert about BP values */}
+              <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">Blood Pressure Values</h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>
+                        Blood pressure and heart rate values will be automatically calculated using the average of your recent measurements from the BP Tracker. 
+                        No need to enter them manually.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -274,38 +272,21 @@ const Prediction = () => {
                   name="total_chol"
                   value={formData.total_chol}
                   onChange={handleInputChange}
-                      placeholder="e.g., 200"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                 />
               </div>
 
               <div>
-                <label htmlFor="heart_rate" className="block text-sm font-medium text-gray-700">
-                  Heart Rate (bpm)
+                <label htmlFor="glucose" className="block text-sm font-medium text-gray-700">
+                  Blood Glucose (mg/dL)
                 </label>
                 <input
                   type="number"
-                  id="heart_rate"
-                  name="heart_rate"
-                  value={formData.heart_rate}
+                  id="glucose"
+                  name="glucose"
+                  value={formData.glucose}
                   onChange={handleInputChange}
-                      placeholder="e.g., 72"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="glucose" className="block text-sm font-medium text-gray-700">
-                      Blood Glucose (mg/dL)
-                    </label>
-                    <input
-                      type="number"
-                      id="glucose"
-                      name="glucose"
-                      value={formData.glucose}
-                      onChange={handleInputChange}
-                      placeholder="e.g., 100"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                 />
               </div>
 

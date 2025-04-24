@@ -75,11 +75,28 @@ const predictionService = {
     }
   },
   
-  // Get prediction history
+  // Get prediction history - returns array of predictions
   getPredictionHistory: async () => {
     try {
       const response = await axiosInstance.get('/history');
-      return response.data.prediction_history;
+      if (response.data && response.data.success) {
+        return response.data.prediction_history;
+      }
+      return [];
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        // No predictions yet, return empty array
+        return [];
+      }
+      throw error;
+    }
+  },
+  
+  // Get the latest prediction
+  getLatestPrediction: async () => {
+    try {
+      const history = await predictionService.getPredictionHistory();
+      return history.length > 0 ? history[0] : null;
     } catch (error) {
       throw error;
     }
