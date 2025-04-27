@@ -16,7 +16,7 @@ class UserProfileService:
             # Check if profile already exists
             existing_profile = self.get_profile(user_id)
             if existing_profile:
-                return {'error': 'Profile already exists for this user'}, 400
+                return {'error': 'Profile already exists for this user. Please update instead.'}, 400
             
             # Create new profile
             profile = UserProfile(user_id=user_id)
@@ -39,7 +39,7 @@ class UserProfileService:
             # Get profile
             profile = self.get_profile(user_id)
             if not profile:
-                return {'error': 'User profile not found'}, 404
+                return {'error': 'User profile not found. Please create a profile first.'}, 404
             
             # Update profile data
             self._update_profile_data(profile, data)
@@ -80,6 +80,12 @@ class UserProfileService:
         
         if 'height' in data:
             profile.height = data.get('height')
+            
+        if 'contact_email' in data:
+            profile.contact_email = data.get('contact_email')
+            
+        if 'emergency_contact' in data:
+            profile.emergency_contact = data.get('emergency_contact')
         
         # Calculate BMI if weight and height are provided
         profile.calculate_bmi()

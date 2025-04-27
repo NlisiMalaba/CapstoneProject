@@ -26,6 +26,8 @@ class UserProfileController:
                 'weight': profile.weight,
                 'height': profile.height,
                 'bmi': profile.bmi,
+                'contact_email': profile.contact_email,
+                'emergency_contact': profile.emergency_contact,
                 'created_at': profile.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'updated_at': profile.updated_at.strftime('%Y-%m-%d %H:%M:%S')
             }
@@ -46,10 +48,10 @@ class UserProfileController:
         
         result, status_code = user_profile_service.create_profile(user_id, data)
         
-        if 'error' in result:
+        if isinstance(result, dict) and 'error' in result:
             return jsonify({
                 'success': False,
-                'message': result['error']
+                'error': result['error']
             }), status_code
         
         return jsonify({
@@ -60,7 +62,9 @@ class UserProfileController:
                 'gender': result.gender,
                 'weight': result.weight,
                 'height': result.height,
-                'bmi': result.bmi
+                'bmi': result.bmi,
+                'contact_email': result.contact_email,
+                'emergency_contact': result.emergency_contact
             }
         }), status_code
     
@@ -79,10 +83,10 @@ class UserProfileController:
         
         result, status_code = user_profile_service.update_profile(user_id, data)
         
-        if 'error' in result:
+        if isinstance(result, dict) and 'error' in result:
             return jsonify({
                 'success': False,
-                'message': result['error']
+                'error': result['error']
             }), status_code
         
         return jsonify({
@@ -93,7 +97,9 @@ class UserProfileController:
                 'gender': result.gender,
                 'weight': result.weight,
                 'height': result.height,
-                'bmi': result.bmi
+                'bmi': result.bmi,
+                'contact_email': result.contact_email,
+                'emergency_contact': result.emergency_contact
             }
         }), status_code
     
@@ -105,10 +111,10 @@ class UserProfileController:
         
         result, status_code = user_profile_service.delete_profile(user_id)
         
-        if 'error' in result:
+        if isinstance(result, dict) and 'error' in result:
             return jsonify({
                 'success': False,
-                'message': result['error']
+                'error': result['error']
             }), status_code
         
         return jsonify({

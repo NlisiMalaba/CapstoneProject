@@ -14,6 +14,10 @@ class UserProfile(db.Model):
     weight = db.Column(db.Float, nullable=True)  # in kg
     height = db.Column(db.Float, nullable=True)  # in cm
     
+    # Contact information
+    contact_email = db.Column(db.String(100), nullable=True)
+    emergency_contact = db.Column(db.String(200), nullable=True)
+    
     # BMI calculated field
     bmi = db.Column(db.Float, nullable=True)
     

@@ -44,7 +44,11 @@ const UserProfile = () => {
         }
       } catch (err) {
         console.error('Error fetching profile:', err);
-        setError('Failed to load profile. Please try again later.');
+        if (err.response && err.response.status === 404) {
+          setProfileExists(false);
+        } else {
+          setError('Failed to load profile. Please try again later.');
+        }
       } finally {
         setLoading(false);
       }
@@ -108,7 +112,11 @@ const UserProfile = () => {
       }
     } catch (err) {
       console.error('Error saving profile:', err);
-      setError('Failed to save profile. Please try again.');
+      if (err.response && err.response.data && err.response.data.error) {
+        setError(err.response.data.error);
+      } else {
+        setError('Failed to save profile. Please try again.');
+      }
     } finally {
       setSaving(false);
       
@@ -155,14 +163,26 @@ const UserProfile = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Your Profile</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {profileExists ? 'Edit Your Profile' : 'Create Your Profile'}
+          </h1>
         </div>
         
         <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <p className="text-gray-700 mb-6">
-            Your profile information is used to automatically populate fields in the hypertension prediction tool.
-            Keeping this information up to date ensures more accurate predictions.
-          </p>
+          <div className="mb-6 p-4 bg-blue-50 rounded-md text-gray-700">
+            <h3 className="font-semibold text-blue-800 mb-2">
+              {profileExists ? 'Update Your Information' : 'Set Up Your Profile'}
+            </h3>
+            <p>
+              Your profile information is used to automatically populate fields in the hypertension prediction tool.
+              Keeping this information up to date ensures more accurate predictions.
+            </p>
+            {!profileExists && (
+              <p className="mt-2 text-sm text-blue-800 font-medium">
+                This is your first time here. Please create your profile to continue.
+              </p>
+            )}
+          </div>
           
           {error && (
             <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-md">
@@ -192,6 +212,7 @@ const UserProfile = () => {
                   placeholder="Enter your age"
                   min="0"
                   max="120"
+                  required
                 />
               </div>
               
@@ -205,6 +226,7 @@ const UserProfile = () => {
                   value={formData.gender}
                   onChange={handleInputChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  required
                 >
                   <option value="">Select gender</option>
                   <option value="Male">Male</option>
@@ -227,6 +249,7 @@ const UserProfile = () => {
                   placeholder="Height in centimeters"
                   min="0"
                   step="0.1"
+                  required
                 />
               </div>
               
@@ -244,6 +267,7 @@ const UserProfile = () => {
                   placeholder="Weight in kilograms"
                   min="0"
                   step="0.1"
+                  required
                 />
               </div>
               
@@ -251,7 +275,7 @@ const UserProfile = () => {
                 <div className="md:col-span-2">
                   <div className="p-4 bg-blue-50 rounded-md">
                     <p className="font-medium text-blue-900">
-                      Calculated BMI: <span className="font-bold">{bmi}</span>
+                      Calculated BMI: <span className="font-bold">{bmi.toFixed(1)}</span>
                       {' '}
                       <span className="text-sm">
                         ({bmi < 18.5 ? 'Underweight' : 
@@ -275,6 +299,7 @@ const UserProfile = () => {
                   onChange={handleInputChange}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                   placeholder="Your contact email"
+                  required
                 />
               </div>
               
