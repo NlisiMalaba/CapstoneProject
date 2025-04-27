@@ -17,26 +17,21 @@ const PredictionHistory = () => {
   const [error, setError] = useState(null);
   
   useEffect(() => {
+    const fetchPredictions = async () => {
+      try {
+        setLoading(true);
+        const data = await predictionService.getPredictionHistory();
+        setPredictions(data);
+      } catch (err) {
+        console.error('Error fetching prediction history:', err);
+        setError('Failed to load prediction history. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
     fetchPredictions();
   }, []);
-  
-  const fetchPredictions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await predictionService.getPredictionHistory();
-      setPredictions(data);
-    } catch (err) {
-      console.error('Error fetching prediction history:', err);
-      setError('Failed to load prediction history. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleRetry = () => {
-    fetchPredictions();
-  };
   
   const handleBack = () => {
     navigate('/dashboard');
@@ -91,15 +86,7 @@ const PredictionHistory = () => {
         
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            <div className="flex justify-between items-center">
-              <p className="mr-2">{error}</p>
-              <button
-                onClick={handleRetry}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                Retry
-              </button>
-            </div>
+            <p>{error}</p>
           </div>
         )}
         

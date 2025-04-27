@@ -80,25 +80,15 @@ const predictionService = {
     try {
       const response = await axiosInstance.get('/history');
       if (response.data && response.data.success) {
-        return response.data.prediction_history || [];
+        return response.data.prediction_history;
       }
-      console.warn('Unexpected response format from prediction history endpoint:', response.data);
       return [];
     } catch (error) {
-      console.error('Error fetching prediction history:', error);
-      
-      // Check if the error is due to the API returning a specific error message
-      if (error.response && error.response.data) {
-        console.error('Server error details:', error.response.data);
-        
-        // If there's a message in the error, throw it with more context
-        if (error.response.data.message) {
-          throw new Error(`Server error: ${error.response.data.message}`);
-        }
+      if (error.response && error.response.status === 404) {
+        // No predictions yet, return empty array
+        return [];
       }
-      
-      // For other errors or if status is 404, return empty array instead of throwing
-      return [];
+      throw error;
     }
   },
   

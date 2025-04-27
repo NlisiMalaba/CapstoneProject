@@ -26,29 +26,14 @@ class HypertensionPredictionService:
         
     def load_model(self):
         """Load the trained model from disk."""
-        try:
-            print(f"Attempting to load model from: {self.model_path}")
-            
-            if not os.path.exists(self.model_path):
-                print(f"Model file does not exist at path: {self.model_path}")
-                return False
-            
-            print(f"Model file exists with size: {os.path.getsize(self.model_path)} bytes")
+        if os.path.exists(self.model_path):
             model_data = joblib.load(self.model_path)
-            
-            print(f"Model data loaded with keys: {list(model_data.keys())}")
             self.model = model_data.get('model')
             self.preprocessor = model_data.get('preprocessor')
             self.feature_names = model_data.get('feature_names')
             self.vectorizer = model_data.get('vectorizer', TfidfVectorizer())
-            
-            print(f"Model loaded: {self.model is not None}")
-            print(f"Feature names: {self.feature_names[:5]}... (showing first 5)")
-            
-            return self.model is not None
-        except Exception as e:
-            print(f"Error loading model: {str(e)}")
-            return False
+            return True
+        return False
     
     def train_model(self, dataset_path: str = None):
         """Train a new hypertension prediction model."""

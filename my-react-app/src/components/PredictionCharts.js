@@ -117,27 +117,18 @@ const PredictionCharts = ({ predictionData }) => {
     
     setRiskFactorFrequency(factorFrequency);
     
-    // Prepare feature importance data if available
+    // Prepare feature importance data
     const latestPrediction = sortedData[sortedData.length - 1];
-    if (latestPrediction.feature_importances && typeof latestPrediction.feature_importances === 'object' && latestPrediction.feature_importances !== null) {
-      try {
-        const importanceData = Object.entries(latestPrediction.feature_importances)
-          .map(([name, value]) => ({
-            name: name.replace(/([A-Z])/g, ' $1').trim(), // Add spaces before capital letters
-            value: parseFloat(value),
-          }))
-          .filter(item => !isNaN(item.value)) // Filter out non-numeric values
-          .sort((a, b) => b.value - a.value) // Sort by importance
-          .slice(0, 10); // Take top 10
-        
-        setFeatureImportance(importanceData);
-      } catch (error) {
-        console.error('Error processing feature importances:', error);
-        setFeatureImportance([]);
-      }
-    } else {
-      // If feature importances not available, set empty array
-      setFeatureImportance([]);
+    if (latestPrediction.feature_importances) {
+      const importanceData = Object.entries(latestPrediction.feature_importances)
+        .map(([name, value]) => ({
+          name: name.replace(/([A-Z])/g, ' $1').trim(), // Add spaces before capital letters
+          value: parseFloat(value),
+        }))
+        .sort((a, b) => b.value - a.value) // Sort by importance
+        .slice(0, 10); // Take top 10
+      
+      setFeatureImportance(importanceData);
     }
   };
   
