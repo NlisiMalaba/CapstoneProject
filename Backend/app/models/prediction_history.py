@@ -25,13 +25,20 @@ class PredictionHistory(db.Model):
     @property
     def serialize(self):
         """Return data in serializable format"""
-        return {
+        data = {
             'id': self.id,
             'patient_id': self.patient_id,
             'prediction_score': self.prediction_score,
             'prediction_date': self.prediction_date.isoformat() if self.prediction_date else None,
             'risk_level': self.risk_level,
             'risk_factors': self.risk_factors.split(',') if self.risk_factors else [],
-            'recommendations': self.recommendations.split(',') if self.recommendations else [],
-            'feature_importances': self.feature_importances
-        } 
+            'recommendations': self.recommendations.split(',') if self.recommendations else []
+        }
+        
+        # Safely add feature_importances if the column exists
+        try:
+            data['feature_importances'] = self.feature_importances
+        except:
+            data['feature_importances'] = None
+            
+        return data 

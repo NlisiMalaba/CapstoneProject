@@ -22,6 +22,20 @@ def create_app(config_name='default'):
     jwt = JWTManager(app)
     CORS(app)
     
+    # Initialize ML model service
+    from app.services.ml_service import hypertension_prediction_service
+    with app.app_context():
+        if not hypertension_prediction_service.model:
+            print("Initializing ML model during app startup...")
+            try:
+                success = hypertension_prediction_service.load_model()
+                if success:
+                    print("ML model loaded successfully during app startup")
+                else:
+                    print("Failed to load ML model during app startup - check model file path")
+            except Exception as e:
+                print(f"Error loading ML model: {str(e)}")
+    
     # Register blueprints
     app.register_blueprint(auth_bp)
     app.register_blueprint(prediction_bp)

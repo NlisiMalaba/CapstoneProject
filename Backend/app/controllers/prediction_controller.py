@@ -5,6 +5,7 @@ from app.models.patient_data import PatientData
 from app.models.prediction_history import PredictionHistory
 from app.services.user_profile_service import user_profile_service
 from app.database import db
+from sqlalchemy.sql import text
 
 prediction_service = PredictionService()
 
@@ -100,28 +101,6 @@ class PredictionController:
             if not profile_data.bmi and (not profile_data.height or not profile_data.weight):
                 missing_fields.append('height and weight')
         
-        # Get patient data
-        patient_data = PatientData.query.filter_by(user_id=user_id).first()
-        
-        # If patient data doesn't exist, create a new empty record
-        if not patient_data:
-            patient_data = PatientData(user_id=user_id)
-            db.session.add(patient_data)
-            db.session.commit()
-        
-        # Update patient data with profile info even if incomplete
-        if profile_data:
-            if profile_data.age:
-                patient_data.age = profile_data.age
-            if profile_data.gender:
-                patient_data.gender = profile_data.gender
-            if profile_data.bmi:
-                patient_data.bmi = profile_data.bmi
-            elif profile_data.height and profile_data.weight:
-                height_in_meters = profile_data.height / 100
-                patient_data.bmi = round(profile_data.weight / (height_in_meters * height_in_meters), 2)
-            db.session.commit()
-        
         # Return helpful error if profile data is missing required fields
         if missing_fields:
             return jsonify({
@@ -130,8 +109,29 @@ class PredictionController:
                 'missing_fields': missing_fields
             }), 400
             
-        # Run prediction
-        result, status_code = prediction_service.predict_hypertension(patient_data)
+        # Create a new patient data record for this prediction
+        new_patient_data = PatientData(user_id=user_id)
+        
+        # Fill in data from profile
+        if profile_data:
+            if profile_data.age:
+                new_patient_data.age = profile_data.age
+            if profile_data.gender:
+                new_patient_data.gender = profile_data.gender
+            if profile_data.bmi:
+                new_patient_data.bmi = profile_data.bmi
+            elif profile_data.height and profile_data.weight:
+                height_in_meters = profile_data.height / 100
+                new_patient_data.bmi = round(profile_data.weight / (height_in_meters * height_in_meters), 2)
+        
+        # Save the new patient data record
+        db.session.add(new_patient_data)
+        db.session.commit()
+        
+        print(f"Created new patient data record with ID: {new_patient_data.id}")
+            
+        # Run prediction with the new patient data
+        result, status_code = prediction_service.predict_hypertension(new_patient_data)
         
         if 'error' in result:
             return jsonify({'success': False, 'message': result['error']}), status_code
@@ -152,32 +152,90 @@ class PredictionController:
     @jwt_required()
     def get_prediction_history():
         """Get prediction history for the current user."""
-        user_id = get_jwt_identity()
-        
-        # Get patient data
-        patient_data = PatientData.query.filter_by(user_id=user_id).first()
-        
-        if not patient_data:
+        try:
+            user_id = get_jwt_identity()
+            
+            # Get all patient data records for this user
+            patient_records = PatientData.query.filter_by(user_id=user_id).all()
+            
+            if not patient_records:
+                return jsonify({
+                    'success': True, 
+                    'prediction_history': []
+                }), 200
+            
+            # Get all predictions from prediction_history for all patient records
+            try:
+                all_predictions = []
+                
+                # Get patient IDs
+                patient_ids = [p.id for p in patient_records]
+                
+                # Fetch all predictions for this user's patient records
+                predictions = PredictionHistory.query\
+                    .filter(PredictionHistory.patient_id.in_(patient_ids))\
+                    .order_by(PredictionHistory.prediction_date.desc())\
+                    .all()
+                
+                if not predictions:
+                    return jsonify({
+                        'success': True, 
+                        'prediction_history': []
+                    }), 200
+                
+                # Return all predictions
+                prediction_data = [p.serialize for p in predictions]
+                
+                return jsonify({
+                    'success': True,
+                    'prediction_history': prediction_data
+                }), 200
+            except Exception as e:
+                print(f"Database query error: {str(e)}")
+                # If there's an error with the query (e.g., missing column), try a simplified query
+                try:
+                    # Use a more basic query with text() that works with SQLite and PostgreSQL
+                    result = db.session.execute(
+                        text("""
+                        SELECT ph.id, ph.patient_id, ph.prediction_score, ph.prediction_date, 
+                               ph.risk_level, ph.risk_factors, ph.recommendations
+                        FROM prediction_history ph
+                        JOIN patient_data pd ON ph.patient_id = pd.id
+                        WHERE pd.user_id = :user_id
+                        ORDER BY ph.prediction_date DESC
+                        """),
+                        {"user_id": user_id}
+                    )
+                    
+                    # Manually process results
+                    prediction_data = []
+                    for row in result:
+                        prediction_data.append({
+                            'id': row[0],
+                            'patient_id': row[1],
+                            'prediction_score': row[2],
+                            'prediction_date': row[3].isoformat() if row[3] else None,
+                            'risk_level': row[4],
+                            'risk_factors': row[5].split(',') if row[5] else [],
+                            'recommendations': row[6].split(',') if row[6] else [],
+                            'feature_importances': None  # Set to None since we can't get this
+                        })
+                    
+                    return jsonify({
+                        'success': True,
+                        'prediction_history': prediction_data
+                    }), 200
+                except Exception as inner_e:
+                    print(f"Fallback query error: {str(inner_e)}")
+                    return jsonify({
+                        'success': False,
+                        'message': 'Error retrieving prediction history due to database schema issue.',
+                        'error': str(inner_e)
+                    }), 500
+        except Exception as e:
+            print(f"Prediction history error: {str(e)}")
             return jsonify({
-                'success': True, 
-                'prediction_history': []
-            }), 200
-        
-        # Get all predictions from prediction_history
-        predictions = PredictionHistory.query.filter_by(patient_id=patient_data.id)\
-            .order_by(PredictionHistory.prediction_date.desc())\
-            .all()
-        
-        if not predictions:
-            return jsonify({
-                'success': True, 
-                'prediction_history': []
-            }), 200
-        
-        # Return all predictions
-        prediction_data = [p.serialize for p in predictions]
-        
-        return jsonify({
-            'success': True,
-            'prediction_history': prediction_data
-        }), 200
+                'success': False,
+                'message': 'Failed to retrieve prediction history. Please try again later.',
+                'error': str(e)
+            }), 500
