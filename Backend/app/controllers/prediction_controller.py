@@ -159,9 +159,9 @@ class PredictionController:
         
         if not patient_data:
             return jsonify({
-                'success': False, 
-                'message': 'No patient data found for this user'
-            }), 404
+                'success': True, 
+                'prediction_history': []
+            }), 200
         
         # Get all predictions from prediction_history
         predictions = PredictionHistory.query.filter_by(patient_id=patient_data.id)\
@@ -170,9 +170,9 @@ class PredictionController:
         
         if not predictions:
             return jsonify({
-                'success': False, 
-                'message': 'No prediction history found for this user'
-            }), 404
+                'success': True, 
+                'prediction_history': []
+            }), 200
         
         # Return all predictions
         prediction_data = [p.serialize for p in predictions]

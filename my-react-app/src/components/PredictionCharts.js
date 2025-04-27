@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar 
+  Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+  AreaChart, Area, ScatterChart, Scatter, ZAxis, ReferenceArea
 } from 'recharts';
 
 // Color palette for consistent styling
@@ -26,10 +27,19 @@ const riskLevelColors = {
   'Very High': colors.veryHighRisk
 };
 
+// Function to format date
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString();
+};
+
 const PredictionCharts = ({ predictionData }) => {
   const [timeSeriesData, setTimeSeriesData] = useState([]);
   const [riskDistribution, setRiskDistribution] = useState([]);
   const [featureImportance, setFeatureImportance] = useState([]);
+  const [riskFactorFrequency, setRiskFactorFrequency] = useState([]);
+  const [trendAnalysis, setTrendAnalysis] = useState(null);
   
   useEffect(() => {
     if (predictionData && predictionData.length > 0) {
@@ -45,11 +55,33 @@ const PredictionCharts = ({ predictionData }) => {
     
     // Prepare time series data
     const timeData = sortedData.map(item => ({
-      date: new Date(item.prediction_date).toLocaleDateString(),
+      date: formatDate(item.prediction_date),
+      fullDate: new Date(item.prediction_date).toLocaleDateString() + ' ' + new Date(item.prediction_date).toLocaleTimeString(),
       score: item.prediction_score,
-      riskLevel: item.risk_level
+      riskLevel: item.risk_level,
+      riskColor: riskLevelColors[item.risk_level] || colors.primary
     }));
     setTimeSeriesData(timeData);
+    
+    // Calculate trend analysis
+    if (timeData.length >= 2) {
+      const firstScore = timeData[0].score;
+      const lastScore = timeData[timeData.length - 1].score;
+      const scoreDiff = lastScore - firstScore;
+      const percentChange = ((scoreDiff) / firstScore * 100).toFixed(1);
+      
+      setTrendAnalysis({
+        firstDate: timeData[0].date,
+        lastDate: timeData[timeData.length - 1].date,
+        firstScore,
+        lastScore,
+        scoreDiff,
+        percentChange,
+        improving: scoreDiff < 0,
+        worsening: scoreDiff > 0,
+        stable: scoreDiff === 0
+      });
+    }
     
     // Prepare risk distribution data
     const riskCounts = {};
@@ -63,6 +95,27 @@ const PredictionCharts = ({ predictionData }) => {
       color: riskLevelColors[risk] || colors.primary
     }));
     setRiskDistribution(riskData);
+    
+    // Collate risk factors from all predictions
+    const factorCounts = {};
+    sortedData.forEach(prediction => {
+      if (prediction.risk_factors && Array.isArray(prediction.risk_factors)) {
+        prediction.risk_factors.forEach(factor => {
+          factorCounts[factor] = (factorCounts[factor] || 0) + 1;
+        });
+      }
+    });
+    
+    // Convert to array and sort by frequency
+    const factorFrequency = Object.entries(factorCounts)
+      .map(([factor, count]) => ({ 
+        factor, 
+        count,
+        percentage: (count / sortedData.length * 100).toFixed(0)
+      }))
+      .sort((a, b) => b.count - a.count);
+    
+    setRiskFactorFrequency(factorFrequency);
     
     // Prepare feature importance data
     const latestPrediction = sortedData[sortedData.length - 1];
@@ -87,37 +140,78 @@ const PredictionCharts = ({ predictionData }) => {
     <div className="space-y-8">
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Prediction Analytics</h2>
       
+      {/* Trend Summary */}
+      {trendAnalysis && (
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-800 mb-3">Risk Trend Analysis</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className={`p-4 rounded-lg ${trendAnalysis.improving ? 'bg-green-50' : trendAnalysis.worsening ? 'bg-red-50' : 'bg-gray-50'}`}>
+              <h4 className="text-sm font-medium text-gray-500">Change in Risk Score</h4>
+              <p className={`text-2xl font-bold ${trendAnalysis.improving ? 'text-green-600' : trendAnalysis.worsening ? 'text-red-600' : 'text-gray-600'}`}>
+                {trendAnalysis.scoreDiff > 0 ? '+' : ''}{trendAnalysis.scoreDiff}%
+              </p>
+              <p className="text-sm text-gray-500">From {trendAnalysis.firstDate} to {trendAnalysis.lastDate}</p>
+            </div>
+            
+            <div className="p-4 rounded-lg bg-gray-50">
+              <h4 className="text-sm font-medium text-gray-500">Current Risk Score</h4>
+              <p className="text-2xl font-bold text-indigo-600">{trendAnalysis.lastScore}%</p>
+              <p className="text-sm text-gray-500">As of {trendAnalysis.lastDate}</p>
+            </div>
+            
+            <div className="p-4 rounded-lg bg-gray-50">
+              <h4 className="text-sm font-medium text-gray-500">Total Predictions</h4>
+              <p className="text-2xl font-bold text-indigo-600">{predictionData.length}</p>
+              <p className="text-sm text-gray-500">Over {trendAnalysis ? Math.ceil((new Date(predictionData[predictionData.length-1].prediction_date) - new Date(predictionData[0].prediction_date)) / (1000 * 60 * 60 * 24)) : 0} days</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Risk Score Timeline */}
       <div className="bg-white p-4 rounded-lg shadow">
         <h3 className="text-lg font-medium text-gray-800 mb-3">Risk Score Timeline</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <AreaChart
               data={timeSeriesData}
               margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis domain={[0, 100]} />
-              <Tooltip
+              <Tooltip 
                 formatter={(value, name) => [`${value}%`, 'Risk Score']}
                 labelFormatter={(label) => `Date: ${label}`}
               />
               <Legend />
-              <Line
+              <defs>
+                <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={colors.primary} stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor={colors.primary} stopOpacity={0.2}/>
+                </linearGradient>
+              </defs>
+              <Area
                 type="monotone"
                 dataKey="score"
                 name="Risk Score"
                 stroke={colors.primary}
+                fillOpacity={1}
+                fill="url(#colorScore)"
                 activeDot={{ r: 8 }}
                 strokeWidth={2}
               />
-            </LineChart>
+              {/* Add reference areas for risk levels */}
+              <ReferenceArea y1={0} y2={20} fillOpacity={0.1} fill={colors.lowRisk} />
+              <ReferenceArea y1={20} y2={50} fillOpacity={0.1} fill={colors.moderateRisk} />
+              <ReferenceArea y1={50} y2={80} fillOpacity={0.1} fill={colors.highRisk} />
+              <ReferenceArea y1={80} y2={100} fillOpacity={0.1} fill={colors.veryHighRisk} />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
       
-      {/* Risk Distribution & Feature Importance */}
+      {/* Risk Distribution & Common Risk Factors */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Risk Level Distribution */}
         <div className="bg-white p-4 rounded-lg shadow">
@@ -146,28 +240,33 @@ const PredictionCharts = ({ predictionData }) => {
           </div>
         </div>
         
-        {/* Feature Importance */}
+        {/* Common Risk Factors */}
         <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">Feature Importance</h3>
-          {featureImportance.length > 0 ? (
-            <div className="h-72">
+          <h3 className="text-lg font-medium text-gray-800 mb-3">Common Risk Factors</h3>
+          {riskFactorFrequency.length > 0 ? (
+            <div className="h-72 overflow-auto">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={featureImportance}
+                  data={riskFactorFrequency.slice(0, 8)}
                   layout="vertical"
                   margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 'dataMax']} />
+                  <XAxis type="number" domain={[0, predictionData.length]} />
                   <YAxis 
                     type="category" 
-                    dataKey="name" 
+                    dataKey="factor" 
                     width={80}
                     tick={{ fontSize: 12 }}
                   />
-                  <Tooltip formatter={(value) => [`${(value * 100).toFixed(1)}%`, 'Importance']} />
-                  <Bar dataKey="value" fill={colors.secondary}>
-                    {featureImportance.map((entry, index) => (
+                  <Tooltip 
+                    formatter={(value, name, props) => [
+                      `${value} (${props.payload.percentage}%)`, 
+                      'Frequency'
+                    ]} 
+                  />
+                  <Bar dataKey="count" fill={colors.tertiary}>
+                    {riskFactorFrequency.slice(0, 8).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={colors.chartColors[index % colors.chartColors.length]} />
                     ))}
                   </Bar>
@@ -176,13 +275,13 @@ const PredictionCharts = ({ predictionData }) => {
             </div>
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-500">
-              Feature importance data not available
+              Risk factor data not available
             </div>
           )}
         </div>
       </div>
       
-      {/* Key Risk Factors Radar Chart */}
+      {/* Additional visualizations based on data availability */}
       {featureImportance.length > 0 && (
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-medium text-gray-800 mb-3">Risk Factor Analysis</h3>
@@ -202,6 +301,61 @@ const PredictionCharts = ({ predictionData }) => {
                 <Tooltip formatter={(value) => [`${(value * 100).toFixed(1)}%`, 'Importance']} />
               </RadarChart>
             </ResponsiveContainer>
+          </div>
+        </div>
+      )}
+      
+      {/* Risk transition visualization */}
+      {timeSeriesData.length >= 2 && (
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-medium text-gray-800 mb-3">Risk Level Transitions</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart
+                margin={{ top: 20, right: 20, bottom: 10, left: 10 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" name="Date" />
+                <YAxis dataKey="score" name="Score" domain={[0, 100]} />
+                <ZAxis range={[100, 100]} />
+                <Tooltip 
+                  formatter={(value, name, props) => name === 'Score' ? [`${value}%`, name] : [value, name]}
+                  labelFormatter={(label) => timeSeriesData.find(d => d.date === label)?.fullDate || label}
+                />
+                <Scatter
+                  name="Risk Scores"
+                  data={timeSeriesData}
+                  fill="#8884d8"
+                >
+                  {timeSeriesData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.riskColor} />
+                  ))}
+                </Scatter>
+                {/* Add reference lines for risk thresholds */}
+                <ReferenceArea y1={0} y2={20} fillOpacity={0.1} fill={colors.lowRisk} />
+                <ReferenceArea y1={20} y2={50} fillOpacity={0.1} fill={colors.moderateRisk} />
+                <ReferenceArea y1={50} y2={80} fillOpacity={0.1} fill={colors.highRisk} />
+                <ReferenceArea y1={80} y2={100} fillOpacity={0.1} fill={colors.veryHighRisk} />
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-center mt-2 text-sm">
+            <div className="flex items-center mr-4">
+              <span className="inline-block w-3 h-3 mr-1 rounded-full" style={{backgroundColor: colors.lowRisk}}></span>
+              <span>Low Risk (0-20%)</span>
+            </div>
+            <div className="flex items-center mr-4">
+              <span className="inline-block w-3 h-3 mr-1 rounded-full" style={{backgroundColor: colors.moderateRisk}}></span>
+              <span>Moderate Risk (20-50%)</span>
+            </div>
+            <div className="flex items-center mr-4">
+              <span className="inline-block w-3 h-3 mr-1 rounded-full" style={{backgroundColor: colors.highRisk}}></span>
+              <span>High Risk (50-80%)</span>
+            </div>
+            <div className="flex items-center">
+              <span className="inline-block w-3 h-3 mr-1 rounded-full" style={{backgroundColor: colors.veryHighRisk}}></span>
+              <span>Very High Risk (80-100%)</span>
+            </div>
           </div>
         </div>
       )}

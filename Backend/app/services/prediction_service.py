@@ -5,9 +5,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 from app.models.patient_data import PatientData
 from app.models.blood_pressure import BloodPressure
+from app.models.prediction_history import PredictionHistory
 from app.database import db
 from app.utils.text_processor import extract_features_from_text
-from app.models.prediction_history import PredictionHistory
 from app.services.ml_service import hypertension_prediction_service
 from app.services.user_profile_service import user_profile_service
 
@@ -738,13 +738,19 @@ class PredictionService:
         # Generate recommendations
         recommendations = self._generate_recommendations(patient_data, key_factors)
         
-        # Save mock prediction to database
+        # Save mock prediction to database as a new history record
         try:
-            patient_data.prediction_score = risk_score
-            patient_data.prediction_date = datetime.utcnow()
-            patient_data.risk_level = risk_level
-            patient_data.risk_factors = ','.join(key_factors) if key_factors else ''
-            patient_data.recommendations = ','.join(recommendations) if recommendations else ''
+            # Create new prediction history record
+            prediction_history = PredictionHistory(
+                patient_id=patient_data.id,
+                prediction_score=risk_score,
+                prediction_date=datetime.utcnow(),
+                risk_level=risk_level,
+                risk_factors=','.join(key_factors) if key_factors else '',
+                recommendations=','.join(recommendations) if recommendations else ''
+            )
+            
+            db.session.add(prediction_history)
             db.session.commit()
             print(f"Mock prediction saved to database with score: {risk_score}, level: {risk_level}")
         except Exception as e:
@@ -754,7 +760,7 @@ class PredictionService:
         # Return formatted prediction with full details
         return {
             'prediction_score': risk_score,
-            'prediction_date': datetime.utcnow().strftime('%A %d %B %Y, %I:%M %p'),
+            'prediction_date': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
             'risk_level': risk_level,
             'key_factors': key_factors,
             'recommendations': recommendations,
